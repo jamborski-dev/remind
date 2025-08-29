@@ -1,0 +1,12 @@
+{
+  "projectName": "remind",
+  "mode": "file-router",
+  "typescript": true,
+  "packageManager": "npm",
+  "git": true,
+  "version": 1,
+  "framework": "react-cra",
+  "chosenAddOns": [
+    "biome"
+  ]
+}
