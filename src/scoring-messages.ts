@@ -39,7 +39,7 @@ export const TIER_MESSAGES: Record<ScoreTier, TierInfo> = {
 	},
 };
 
-export function calculateTier(score: number, groupCount: number): ScoreTier {
+export function calculateTier(score: number): ScoreTier {
 	const pointsPerTier = 3; // Always 3 points per tier
 
 	if (score >= pointsPerTier * 3) return "gold"; // 9 points
@@ -48,7 +48,7 @@ export function calculateTier(score: number, groupCount: number): ScoreTier {
 	return "default";
 }
 
-export function getTierThresholds(groupCount: number): number[] {
+export function getTierThresholds(): number[] {
 	const pointsPerTier = 3; // Always 3 points per tier
 	return [
 		pointsPerTier, // bronze threshold (3)

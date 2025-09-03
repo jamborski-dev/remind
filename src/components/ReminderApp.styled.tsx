@@ -15,6 +15,7 @@ export const GlobalStyle = createGlobalStyle`
 	
 	h1, h2, h3, h4, h5, h6 {
 		margin: 0;
+		font-weight: 300;
 	}
 `;
 
@@ -80,14 +81,19 @@ export const HeaderActions = styled.div`
 	justify-self: end;
 `;
 
-export const Layout = styled.div`
-	margin: 0 auto;
+export const Layout = styled.div<{ $showActivityLog?: boolean }>`
+	/* margin: 0 auto; */
 	padding: 2vw;
 	display: grid;
-	grid-template-areas: 
+	grid-template-areas: ${(props) =>
+		props.$showActivityLog
+			? `
 		"activity-log form"
-		"activity-log reminders";
-	grid-template-columns: 30vw 62vw;
+		"activity-log reminders"`
+			: `
+		"form"
+		"reminders"`};
+	grid-template-columns: ${(props) => (props.$showActivityLog ? "30vw 62vw" : "1fr")};
 	grid-template-rows: auto 1fr;
 	gap: 2vw;
 	flex: 1;
@@ -95,12 +101,17 @@ export const Layout = styled.div`
 	height: 100%;
 	
 	@media (max-width: 768px) {
-		grid-template-areas:
+		grid-template-areas: ${(props) =>
+			props.$showActivityLog
+				? `
 			"form"
 			"reminders"
-			"activity-log";
+			"activity-log"`
+				: `
+			"form"
+			"reminders"`};
 		grid-template-columns: 1fr;
-		grid-template-rows: auto auto 1fr;
+		grid-template-rows: ${(props) => (props.$showActivityLog ? "auto auto 1fr" : "auto 1fr")};
 		padding: 1rem;
 	}
 `;
@@ -213,6 +224,10 @@ export const Button = styled.button<{
       border-color: #34d399;
       color: #065f46;
     }
+
+    & * {
+      color: #065f46 !important;
+    }
   `}
 
   ${(props) =>
@@ -226,6 +241,10 @@ export const Button = styled.button<{
       background: #fbbf24;
       border-color: #fbbf24;
       color: #92400e;
+    }
+
+    & * {
+      color: #92400e !important;
     }
   `}
 
@@ -312,6 +331,8 @@ export const Input = styled.input`
 	border-radius: 6px;
 	font-size: 0.875rem;
 	transition: border-color 0.2s;
+	height: 40px;
+	background: white;
 	
 	&:focus {
 		outline: none;
@@ -325,27 +346,31 @@ export const Input = styled.input`
 `;
 
 export const ColorPicker = styled.input`
---size: 32px;
-	width: var(--size);
-	height: var(--size);
+	width: 32px;
+	height: 32px;
 	border: none;
-	border-radius: var(--size);
+	border-radius: 50%;
 	cursor: pointer;
 	background: none;
 	padding: 0;
 	
+	&:focus {
+		outline: none;
+	}
+	
 	&::-webkit-color-swatch-wrapper {
-		padding: 2px;
+		padding: 0;
+		border-radius: 50%;
 	}
 	
 	&::-webkit-color-swatch {
 		border: none;
-		border-radius: 4px;
+		border-radius: 50%;
 	}
 	
 	&::-moz-color-swatch {
 		border: none;
-		border-radius: 4px;
+		border-radius: 50%;
 	}
 `;
 
@@ -563,7 +588,6 @@ export const GroupItemSecondaryRow = styled.div`
 		
 		@media (min-width: 768px) {
 			font-size: 0.875rem;
-			padding: 0.5rem 1rem;
 		}
 	}
 `;
@@ -746,7 +770,7 @@ export const EditableTitle = styled.input`
 	font-size: 1.125rem;
 	font-weight: 600;
 	color: #111827;
-	border: none;
+	border: 1px solid #d1d5db;
 	background: transparent;
 	padding: 2px 4px;
 	border-radius: 4px;
@@ -809,4 +833,5 @@ export const GroupActionsButton = styled(Button)`
 export const TopForm = styled.div`
 	display: flex;
 	gap: 1rem;
+	align-items: flex-end;
 `;

@@ -64,6 +64,24 @@ body {
 .card h2 {
 	margin: 0 0 10px;
 	font-size: 18px;
+	font-weight: 400 !important;
+	color: var(--muted) !important;
+}
+h2,
+h3,
+h4 {
+	font-weight: 400 !important;
+	color: var(--muted) !important;
+}
+.card h3,
+h3 {
+	font-weight: 400 !important;
+	color: var(--muted) !important;
+}
+.card h4,
+h4 {
+	font-weight: 400 !important;
+	color: var(--muted) !important;
 }
 .grid {
 	display: grid;
