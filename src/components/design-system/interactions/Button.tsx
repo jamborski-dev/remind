@@ -1,8 +1,8 @@
 import { css, styled } from "styled-components";
-import { spacing } from "../utils/spacing";
 import { sizes } from "../utils/constants";
-import type { SpacingProps } from "../utils/spacing";
 import type { Size } from "../utils/constants";
+import { spacing } from "../utils/spacing";
+import type { SpacingProps } from "../utils/spacing";
 
 const buttonVariants = {
 	solid: (color: string) => css`
@@ -64,6 +64,8 @@ export const Button = styled.button<ButtonProps>`
   cursor: pointer;
   border: 1px solid transparent;
   transition: background 0.2s ease, color 0.2s ease, border 0.2s ease;
+  display: flex;
+  align-items: center;
 
   ${({ size = "md" }) => {
 		const sizeStyles = sizes[size];

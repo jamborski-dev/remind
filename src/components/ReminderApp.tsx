@@ -1,6 +1,5 @@
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { BsDisplay } from "react-icons/bs";
 import {
 	FaArrowDown,
 	FaArrowLeft,
@@ -8,12 +7,8 @@ import {
 	FaArrowUp,
 	FaCheck,
 	FaClock,
-	FaGear,
-	FaLock,
-	FaLockOpen,
 	FaPencil,
 	FaPlay,
-	FaRotateRight,
 	FaTrash,
 	FaXmark,
 } from "react-icons/fa6";
@@ -21,122 +16,59 @@ import Select from "react-select";
 import { TIER_MESSAGES, calculateTier } from "../scoring-messages";
 import { SOUND_CONFIGS, getSoundConfig, playSound } from "../sounds";
 import { type ReminderGroup, uid, useAppStore } from "../store";
+import { GRACE_MS, clamp } from "../utils/helpers";
+import {
+	formatCountdown,
+	formatShortDistance,
+	formatTime,
+	isSameLocalDay,
+} from "../utils/time";
+import { CelebrationModals } from "./CelebrationModals";
+import { DeleteGroupModal } from "./DeleteGroupModal";
+import { DueItemModal } from "./DueItemModal";
+import { Modal } from "./Modal";
 import {
 	ActivityTable,
-	AppContainer,
 	AutoMarginButton,
 	Badge,
 	Button,
 	Card,
 	CardContent,
-	CenterText,
 	ColorPicker,
 	ColorPickerRow,
 	CountdownBadge,
 	CycleContainer,
 	DueText,
-	EditButtonGroup,
 	EditableInterval,
 	EditableTitle,
 	FlexInput,
 	Footer,
 	FormGridContainer,
-	GlobalStyle,
-	Grid,
 	GroupActionsButton,
 	GroupCard,
-	GroupItemButtonGroup,
-	GroupItemFormRow,
 	GroupItemMainRow,
 	GroupItemMeta,
 	GroupItemRow,
 	GroupItemSecondaryRow,
 	GroupItemText,
-	GroupItems,
-	GroupList,
 	GroupTitle,
-	Header,
-	HeaderActions,
-	HeaderScore,
-	HeaderTitle,
 	Input,
 	ItemTitleSpan,
 	Layout,
 	Main,
-	ModalButtons,
-	ModalContent,
-	ModalMetaInfo,
-	ModalOverlay,
 	MutedText,
 	NumberInput,
 	RemindersContainer,
 	RemindersSection,
 	RemindersTitle,
+	ResponsiveButtonGroup,
 	Sidebar,
-	SidebarHeader,
 	SmallButton,
 	StatusBadge,
-	TitleRow,
 	ToggleSwitch,
-	TopForm,
-	WakeLockButton,
 } from "./ReminderApp.styled";
+import { AppLayout } from "./compound/AppLayout";
 import { Flex } from "./design-system/layout/Flex";
-
-const formatTime = (ts: number) =>
-	new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-
-function formatShortDistance(timestamp: number) {
-	const now = Date.now();
-	const diff = now - timestamp;
-	const seconds = Math.floor(diff / 1000);
-	const minutes = Math.floor(seconds / 60);
-	const hours = Math.floor(minutes / 60);
-	const days = Math.floor(hours / 24);
-
-	if (seconds < 60) return "< 1m ago";
-	if (minutes < 60) return `${minutes}m ago`;
-	if (hours < 24) return `${hours}h ago`;
-	return `${days}d ago`;
-}
-
-// ---- Utilities ----
-const GRACE_MS = 5000; // allow 5s grace: treat slightly-past due times as due now
-const clamp = (value: number, min: number, max: number) =>
-	Math.min(Math.max(value, min), max);
-
-function formatCountdown(ms: number) {
-	const total = Math.max(0, Math.floor(ms / 1000));
-	const s = total % 60;
-	const m = Math.floor(total / 60) % 60;
-	const h = Math.floor(total / 3600);
-	if (h > 0)
-		return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-	return `${m}:${String(s).padStart(2, "0")}`;
-}
-
-function isSameLocalDay(a: number, b: number) {
-	const dateA = new Date(a);
-	const dateB = new Date(b);
-	return (
-		dateA.getFullYear() === dateB.getFullYear() &&
-		dateA.getMonth() === dateB.getMonth() &&
-		dateA.getDate() === dateB.getDate()
-	);
-}
-
-// ---- Modal ----
-function Modal({
-	open,
-	children,
-}: { open: boolean; children: React.ReactNode }) {
-	if (!open) return null;
-	return (
-		<ModalOverlay>
-			<ModalContent>{children}</ModalContent>
-		</ModalOverlay>
-	);
-}
 
 // ---- Main App ----
 export default function App() {
@@ -676,1057 +608,900 @@ export default function App() {
 	// Form refs
 
 	return (
-		<>
-			<GlobalStyle />
-			<AppContainer>
-				<Header>
-					<HeaderTitle>re:MIND</HeaderTitle>
-					<HeaderScore
-						$tierColor={TIER_MESSAGES[currentTier].color}
-						$showTrophy={currentTier === "gold"}
-						style={{
-							opacity: score > 0 ? 1 : 0,
-						}}
-					>
-						{TIER_MESSAGES[currentTier].emoji} {score} point
-						{score !== 1 ? "s" : ""}
-					</HeaderScore>
-					<HeaderActions>
-						<MutedText>Groups: {groups.length}</MutedText>
-						{import.meta.env?.DEV && (
+		<AppLayout
+			currentTier={TIER_MESSAGES[currentTier]}
+			score={score}
+			groupsCount={groups.length}
+			reseedDev={reseedDev}
+			wakeLockSupported={wakeLockSupported}
+			acquireWakeLock={acquireWakeLock}
+			releaseWakeLock={releaseWakeLock}
+			setShowSettingsModal={setShowSettingsModal}
+		>
+			<Layout $showActivityLog={showActivityLog}>
+				{showActivityLog && (
+					<Sidebar direction="column" gap="1rem">
+						<Card>
+							<Flex
+								justifyContent="space-between"
+								alignItems="center"
+								mb="1rem"
+							>
+								<h2 style={{ fontSize: "1rem" }}>Activity log</h2>
+								<Button type="button" onClick={clearTodaysActivity}>
+									Clear
+								</Button>
+							</Flex>
+
+							<CardContent>
+								{paginatedActivity.items.length === 0 ? (
+									<MutedText $small>No activity yet.</MutedText>
+								) : (
+									<>
+										<ActivityTable>
+											<thead>
+												<tr>
+													<th>Time</th>
+													<th />
+													<th>Task</th>
+												</tr>
+											</thead>
+											<tbody>
+												{paginatedActivity.items.map((entry) => (
+													<tr key={entry.id}>
+														<td>{formatTime(entry.at)}</td>
+														<td>
+															{entry.action === "done" ? (
+																<FaCheck />
+															) : (
+																<Flex alignItems="center" gap={1}>
+																	<FaClock />
+																	{entry.snoozeForMinutes}M
+																</Flex>
+															)}
+														</td>
+														<td>
+															<Flex alignItems="center" gap={1}>
+																<div
+																	style={{
+																		width: "8px",
+																		height: "8px",
+																		borderRadius: "50%",
+																		backgroundColor: getGroupColorForReminder(
+																			entry.reminderId,
+																		),
+																		flexShrink: 0,
+																	}}
+																/>
+																{entry.text}
+															</Flex>
+														</td>
+													</tr>
+												))}
+											</tbody>
+										</ActivityTable>
+
+										{/* Pagination controls */}
+										{paginatedActivity.totalPages > 1 && (
+											<div
+												style={{
+													display: "flex",
+													justifyContent: "space-between",
+													alignItems: "center",
+													marginTop: "1rem",
+													fontSize: "0.875rem",
+												}}
+											>
+												<Button
+													type="button"
+													onClick={() =>
+														setActivityLogPage(Math.max(0, activityLogPage - 1))
+													}
+													disabled={activityLogPage === 0}
+													style={{ minWidth: "80px" }}
+												>
+													Previous
+												</Button>
+												<span>
+													Page {activityLogPage + 1} of{" "}
+													{paginatedActivity.totalPages}
+												</span>
+												<Button
+													type="button"
+													onClick={() =>
+														setActivityLogPage(
+															Math.min(
+																paginatedActivity.totalPages - 1,
+																activityLogPage + 1,
+															),
+														)
+													}
+													disabled={
+														activityLogPage === paginatedActivity.totalPages - 1
+													}
+													style={{ minWidth: "80px" }}
+												>
+													Next
+												</Button>
+											</div>
+										)}
+									</>
+								)}
+							</CardContent>
+						</Card>
+					</Sidebar>
+				)}
+
+				<Main direction="column" gap="1.5rem">
+					<Card>
+						<Flex justifyContent="space-between" alignItems="center">
+							<h2>Create a reminder group</h2>
 							<Button
 								type="button"
-								onClick={reseedDev}
-								title="Reseed demo groups (dev)"
+								onClick={() => setFormExpanded(!formExpanded)}
 							>
-								<FaRotateRight />
+								{formExpanded ? "Collapse" : "Expand"}
 							</Button>
-						)}
-						{wakeLockSupported && (
-							<WakeLockSwitch
-								acquire={acquireWakeLock}
-								release={releaseWakeLock}
-							/>
-						)}
-						<Button
-							type="button"
-							onClick={() => setShowSettingsModal(true)}
-							title="Settings"
-						>
-							<FaGear />
-						</Button>
-					</HeaderActions>
-				</Header>
+						</Flex>
 
-				<Layout $showActivityLog={showActivityLog}>
-					{showActivityLog && (
-						<Sidebar>
-							<Card>
-								<SidebarHeader style={{ marginBottom: "1rem" }}>
-									<h2 style={{ fontSize: "1rem" }}>Activity log</h2>
-									<Button type="button" onClick={clearTodaysActivity}>
-										Clear
-									</Button>
-								</SidebarHeader>
-
-								<CardContent>
-									{paginatedActivity.items.length === 0 ? (
-										<MutedText $small>No activity yet.</MutedText>
-									) : (
-										<>
-											<ActivityTable>
-												<thead>
-													<tr>
-														<th>Time</th>
-														<th />
-														<th>Task</th>
-													</tr>
-												</thead>
-												<tbody>
-													{paginatedActivity.items.map((entry) => (
-														<tr key={entry.id}>
-															<td>{formatTime(entry.at)}</td>
-															<td>
-																{entry.action === "done" ? (
-																	<FaCheck />
-																) : (
-																	<Flex alignItems="center" gap={1}>
-																		<FaClock />
-																		{entry.snoozeForMinutes}M
-																	</Flex>
-																)}
-															</td>
-															<td>
-																<Flex alignItems="center" gap={1}>
-																	<div
-																		style={{
-																			width: "8px",
-																			height: "8px",
-																			borderRadius: "50%",
-																			backgroundColor: getGroupColorForReminder(
-																				entry.reminderId,
-																			),
-																			flexShrink: 0,
-																		}}
-																	/>
-																	{entry.text}
-																</Flex>
-															</td>
-														</tr>
-													))}
-												</tbody>
-											</ActivityTable>
-
-											{/* Pagination controls */}
-											{paginatedActivity.totalPages > 1 && (
-												<div
-													style={{
-														display: "flex",
-														justifyContent: "space-between",
-														alignItems: "center",
-														marginTop: "1rem",
-														fontSize: "0.875rem",
-													}}
-												>
-													<Button
-														type="button"
-														onClick={() =>
-															setActivityLogPage(
-																Math.max(0, activityLogPage - 1),
-															)
-														}
-														disabled={activityLogPage === 0}
-														style={{ minWidth: "80px" }}
-													>
-														Previous
-													</Button>
-													<span>
-														Page {activityLogPage + 1} of{" "}
-														{paginatedActivity.totalPages}
-													</span>
-													<Button
-														type="button"
-														onClick={() =>
-															setActivityLogPage(
-																Math.min(
-																	paginatedActivity.totalPages - 1,
-																	activityLogPage + 1,
-																),
-															)
-														}
-														disabled={
-															activityLogPage ===
-															paginatedActivity.totalPages - 1
-														}
-														style={{ minWidth: "80px" }}
-													>
-														Next
-													</Button>
-												</div>
-											)}
-										</>
-									)}
-								</CardContent>
-							</Card>
-						</Sidebar>
-					)}
-
-					<Main>
-						<Card>
-							<SidebarHeader>
-								<h2>Create a reminder group</h2>
-								<Button
-									type="button"
-									onClick={() => setFormExpanded(!formExpanded)}
+						<AnimatePresence>
+							{formExpanded && (
+								<motion.div
+									initial={{ opacity: 0, height: 0 }}
+									animate={{
+										opacity: 1,
+										height: "auto",
+										transition: {
+											duration: 0.3,
+											ease: "easeOut",
+										},
+									}}
+									exit={{
+										opacity: 0,
+										height: 0,
+										transition: {
+											duration: 0.2,
+											ease: "easeIn",
+										},
+									}}
+									style={{ overflow: "hidden" }}
 								>
-									{formExpanded ? "Collapse" : "Expand"}
-								</Button>
-							</SidebarHeader>
+									<div
+										style={{
+											marginTop: "2rem",
+											display: "grid",
+											gridTemplateColumns: "1fr auto auto",
+											gap: "1rem",
+											alignItems: "end",
+										}}
+									>
+										<Flex gap="1rem" alignItems="flex-end">
+											<FormGridContainer>
+												Group title (optional)
+												<Input
+													type="text"
+													placeholder="e.g. Morning routine"
+													value={groupTitle}
+													onChange={(e) => setGroupTitle(e.target.value)}
+												/>
+											</FormGridContainer>
+											<ColorPickerRow>
+												<span>Group color</span>
+												<ColorPicker
+													type="color"
+													value={groupColor}
+													onChange={(e) => setGroupColor(e.target.value)}
+												/>
+											</ColorPickerRow>
+										</Flex>
 
-							<AnimatePresence>
-								{formExpanded && (
-									<motion.div
-										initial={{ opacity: 0, height: 0 }}
+										<RemindersContainer>
+											<RemindersTitle className="small">
+												Reminders in this group
+											</RemindersTitle>
+											{groupItems.map((item, idx) => (
+												<Flex
+													key={item.id}
+													gap="8px"
+													alignItems="center"
+													mb="8px"
+													direction="row"
+												>
+													<FlexInput
+														type="text"
+														placeholder={`Reminder #${idx + 1} title`}
+														value={item.title}
+														onChange={(e) =>
+															updateGroupItem(item.id, e.target.value)
+														}
+													/>
+													<Button
+														type="button"
+														title="Move up"
+														onClick={() => moveGroupItem(item.id, -1)}
+													>
+														<FaArrowUp />
+													</Button>
+													<Button
+														type="button"
+														title="Move down"
+														onClick={() => moveGroupItem(item.id, +1)}
+													>
+														<FaArrowDown />
+													</Button>
+													<Button
+														$variant="danger"
+														type="button"
+														title="Remove"
+														onClick={() => removeGroupItem(item.id)}
+													>
+														<FaXmark />
+													</Button>
+												</Flex>
+											))}
+											<Button type="button" onClick={addGroupItem}>
+												+ Add another
+											</Button>
+										</RemindersContainer>
+
+										<CycleContainer>
+											<span>Cycle every</span>
+											<NumberInput
+												type="number"
+												className="number"
+												min={1}
+												max={240}
+												value={groupInterval}
+												onChange={(e) =>
+													setGroupInterval(
+														clamp(Number(e.target.value) || 1, 1, 240),
+													)
+												}
+											/>
+											<span>minutes</span>
+											<AutoMarginButton
+												type="button"
+												$variant="primary"
+												onClick={submitGroup}
+											>
+												Add group
+											</AutoMarginButton>
+										</CycleContainer>
+									</div>
+								</motion.div>
+							)}
+						</AnimatePresence>
+					</Card>
+				</Main>
+
+				<RemindersSection direction="column" gap="1rem">
+					<Flex direction="column" gap="1rem">
+						{groups.length === 0 ? (
+							<MutedText>No groups yet. Add one above.</MutedText>
+						) : (
+							<AnimatePresence mode="popLayout" initial={false}>
+								{groups.map((group, idx) => (
+									<GroupCard
+										key={group.id}
+										layoutId={group.id}
+										layout="position"
+										$borderColor={group.color}
+										$enabled={group.enabled ?? true}
+										transition={{
+											layout: {
+												duration: 0.4,
+												ease: [0.4, 0.0, 0.2, 1], // Custom cubic-bezier for smooth motion
+											},
+											opacity: {
+												duration: 0.3,
+												ease: "easeInOut",
+											},
+											scale: {
+												duration: 0.3,
+												ease: "easeInOut",
+											},
+										}}
+										initial={{
+											opacity: 0,
+											scale: 0.9,
+											y: 20,
+										}}
 										animate={{
 											opacity: 1,
-											height: "auto",
+											scale: 1,
+											y: 0,
 											transition: {
 												duration: 0.3,
 												ease: "easeOut",
+												delay: idx * 0.05, // Stagger effect
 											},
 										}}
 										exit={{
 											opacity: 0,
-											height: 0,
+											scale: 0.8,
+											y: -20,
 											transition: {
 												duration: 0.2,
 												ease: "easeIn",
 											},
 										}}
-										style={{ overflow: "hidden" }}
 									>
-										<Grid>
-											<TopForm>
-												<FormGridContainer>
-													Group title (optional)
-													<Input
-														type="text"
-														placeholder="e.g. Morning routine"
-														value={groupTitle}
-														onChange={(e) => setGroupTitle(e.target.value)}
-													/>
-												</FormGridContainer>
-												<ColorPickerRow>
-													<span>Group color</span>
-													<ColorPicker
-														type="color"
-														value={groupColor}
-														onChange={(e) => setGroupColor(e.target.value)}
-													/>
-												</ColorPickerRow>
-											</TopForm>
-
-											<RemindersContainer>
-												<RemindersTitle className="small">
-													Reminders in this group
-												</RemindersTitle>
-												{groupItems.map((item, idx) => (
-													<GroupItemFormRow key={item.id}>
-														<FlexInput
-															type="text"
-															placeholder={`Reminder #${idx + 1} title`}
-															value={item.title}
+										<Flex
+											alignItems="center"
+											mb="1rem"
+											gap="0.5rem"
+											justifyContent="space-between"
+										>
+											<div
+												style={{
+													display: "flex",
+													alignItems: "center",
+													gap: "0.5rem",
+												}}
+											>
+												{editingGroup?.id === group.id ? (
+													<>
+														<EditableTitle
+															value={editingGroup.title}
 															onChange={(e) =>
-																updateGroupItem(item.id, e.target.value)
+																setEditingGroup({
+																	...editingGroup,
+																	title: e.target.value,
+																})
+															}
+															onKeyDown={(e) => {
+																if (e.key === "Enter") saveGroupEdit();
+																if (e.key === "Escape") cancelGroupEdit();
+															}}
+															autoFocus
+														/>
+														<ColorPicker
+															type="color"
+															value={editingGroup.color}
+															onChange={(e) =>
+																setEditingGroup({
+																	...editingGroup,
+																	color: e.target.value,
+																})
 															}
 														/>
-														<Button
+													</>
+												) : (
+													<GroupTitle>{group.title}</GroupTitle>
+												)}
+
+												{(() => {
+													if (!(group.enabled ?? true)) {
+														return (
+															<StatusBadge
+																$isDue={false}
+																style={{
+																	backgroundColor: "#f3f4f6",
+																	color: "#6b7280",
+																	border: "1px solid #d1d5db",
+																}}
+															>
+																paused
+															</StatusBadge>
+														);
+													}
+													// Check if all items in the group are disabled
+													const hasEnabledItems = group.items.some(
+														(item) => item.enabled !== false,
+													);
+													if (!hasEnabledItems) {
+														return (
+															<StatusBadge
+																$isDue={false}
+																style={{
+																	backgroundColor: "#f3f4f6",
+																	color: "#6b7280",
+																	border: "1px solid #d1d5db",
+																}}
+															>
+																paused
+															</StatusBadge>
+														);
+													}
+													const diff = group.nextDueTime - nowTs;
+													if (diff <= 0) {
+														return (
+															<StatusBadge $isDue={true}>due now</StatusBadge>
+														);
+													}
+													return (
+														<CountdownBadge $isDue={false}>
+															{formatCountdown(diff)}
+														</CountdownBadge>
+													);
+												})()}
+
+												{editingGroup?.id === group.id ? (
+													<>
+														<span>every</span>
+														<EditableInterval
+															type="number"
+															min="1"
+															max="240"
+															value={editingGroup.interval}
+															onChange={(e) =>
+																setEditingGroup({
+																	...editingGroup,
+																	interval: Number(e.target.value) || 1,
+																})
+															}
+														/>
+														<span>min</span>
+													</>
+												) : (
+													<Badge>every {group.intervalMinutes} min</Badge>
+												)}
+											</div>
+
+											<div
+												style={{
+													display: "flex",
+													alignItems: "center",
+													gap: "0.5rem",
+												}}
+											>
+												{editingGroup?.id === group.id ? (
+													<Flex gap="0.25rem" ml="0.5rem">
+														<SmallButton
 															type="button"
-															title="Move up"
-															onClick={() => moveGroupItem(item.id, -1)}
+															$variant="success"
+															onClick={saveGroupEdit}
 														>
-															<FaArrowUp />
-														</Button>
-														<Button
+															<FaCheck />
+														</SmallButton>
+														<SmallButton
 															type="button"
-															title="Move down"
-															onClick={() => moveGroupItem(item.id, +1)}
-														>
-															<FaArrowDown />
-														</Button>
-														<Button
-															$variant="danger"
-															type="button"
-															title="Remove"
-															onClick={() => removeGroupItem(item.id)}
+															onClick={cancelGroupEdit}
 														>
 															<FaXmark />
-														</Button>
-													</GroupItemFormRow>
-												))}
-												<Button type="button" onClick={addGroupItem}>
-													+ Add another
-												</Button>
-											</RemindersContainer>
+														</SmallButton>
+													</Flex>
+												) : (
+													<>
+														<GroupActionsButton
+															type="button"
+															onClick={() => startEditingGroup(group)}
+															title="Edit group"
+														>
+															<FaPencil />
+														</GroupActionsButton>
+														<GroupActionsButton
+															type="button"
+															onClick={() => moveGroup(group.id, -1)}
+															title="Move group up"
+															disabled={idx === 0}
+														>
+															<FaArrowUp />
+														</GroupActionsButton>
+														<GroupActionsButton
+															type="button"
+															onClick={() => moveGroup(group.id, 1)}
+															title="Move group down"
+															disabled={idx === groups.length - 1}
+														>
+															<FaArrowDown />
+														</GroupActionsButton>
+													</>
+												)}
 
-											<CycleContainer>
-												<span>Cycle every</span>
-												<NumberInput
-													type="number"
-													className="number"
-													min={1}
-													max={240}
-													value={groupInterval}
-													onChange={(e) =>
-														setGroupInterval(
-															clamp(Number(e.target.value) || 1, 1, 240),
-														)
+												<ToggleSwitch
+													$enabled={group.enabled ?? true}
+													onClick={() => toggleGroupEnabled(group.id)}
+													title={
+														(group.enabled ?? true)
+															? "Disable group"
+															: "Enable group"
 													}
 												/>
-												<span>minutes</span>
-												<AutoMarginButton
+
+												<GroupActionsButton
 													type="button"
-													$variant="primary"
-													onClick={submitGroup}
+													$variant="danger"
+													onClick={() => setGroupToDelete(group)}
+													title="Delete group"
 												>
-													Add group
-												</AutoMarginButton>
-											</CycleContainer>
-										</Grid>
-									</motion.div>
-								)}
-							</AnimatePresence>
-						</Card>
-					</Main>
+													<FaTrash />
+												</GroupActionsButton>
+											</div>
+										</Flex>
+										<Flex direction="column" gap="0.75rem">
+											<AnimatePresence mode="popLayout" initial={false}>
+												{getSortedGroupItems(group).map((i, idx) => {
+													// Current item is the first enabled item (since disabled items are at bottom)
+													const isCurrentItem =
+														i.id === group.items[group.currentItemIndex]?.id;
+													const isGroupDue = group.nextDueTime <= nowTs;
+													return (
+														<GroupItemRow
+															key={i.id}
+															layoutId={i.id}
+															layout="position"
+															$enabled={i.enabled ?? true}
+															transition={{
+																layout: {
+																	duration: 0.4,
+																	ease: [0.4, 0.0, 0.2, 1], // Custom cubic-bezier for smooth motion
+																},
+																opacity: {
+																	duration: 0.3,
+																	ease: "easeInOut",
+																},
+																scale: {
+																	duration: 0.3,
+																	ease: "easeInOut",
+																},
+															}}
+															initial={{
+																opacity: 0,
+																scale: 0.9,
+																y: 20,
+															}}
+															animate={{
+																opacity: 1,
+																scale: 1,
+																y: 0,
+																transition: {
+																	duration: 0.3,
+																	ease: "easeOut",
+																	delay: idx * 0.05, // Stagger effect
+																},
+															}}
+															exit={{
+																opacity: 0,
+																scale: 0.8,
+																y: -20,
+																transition: {
+																	duration: 0.2,
+																	ease: "easeIn",
+																},
+															}}
+														>
+															<GroupItemMainRow>
+																<GroupItemText $enabled={i.enabled ?? true}>
+																	<ItemTitleSpan>{i.title}</ItemTitleSpan>
+																	{isCurrentItem &&
+																		(i.enabled ?? true) &&
+																		(group.enabled ?? true) &&
+																		(() => {
+																			// Check if recently snoozed (within 30 seconds of snooze action)
+																			const recentlySnoozeThreshold = 30 * 1000; // 30 seconds
+																			const isRecentlySnooze =
+																				group.snoozedAt &&
+																				nowTs - group.snoozedAt <
+																					recentlySnoozeThreshold;
 
-					<RemindersSection>
-						<GroupList>
-							{groups.length === 0 ? (
-								<MutedText>No groups yet. Add one above.</MutedText>
-							) : (
-								<AnimatePresence mode="popLayout" initial={false}>
-									{groups.map((group, idx) => (
-										<GroupCard
-											key={group.id}
-											layoutId={group.id}
-											layout="position"
-											$borderColor={group.color}
-											$enabled={group.enabled ?? true}
-											transition={{
-												layout: {
-													duration: 0.4,
-													ease: [0.4, 0.0, 0.2, 1], // Custom cubic-bezier for smooth motion
-												},
-												opacity: {
-													duration: 0.3,
-													ease: "easeInOut",
-												},
-												scale: {
-													duration: 0.3,
-													ease: "easeInOut",
-												},
-											}}
-											initial={{
-												opacity: 0,
-												scale: 0.9,
-												y: 20,
-											}}
-											animate={{
-												opacity: 1,
-												scale: 1,
-												y: 0,
-												transition: {
-													duration: 0.3,
-													ease: "easeOut",
-													delay: idx * 0.05, // Stagger effect
-												},
-											}}
-											exit={{
-												opacity: 0,
-												scale: 0.8,
-												y: -20,
-												transition: {
-													duration: 0.2,
-													ease: "easeIn",
-												},
-											}}
-										>
-											<TitleRow>
-												<div
-													style={{
-														display: "flex",
-														alignItems: "center",
-														gap: "0.5rem",
-													}}
-												>
-													{editingGroup?.id === group.id ? (
-														<>
-															<EditableTitle
-																value={editingGroup.title}
-																onChange={(e) =>
-																	setEditingGroup({
-																		...editingGroup,
-																		title: e.target.value,
-																	})
-																}
-																onKeyDown={(e) => {
-																	if (e.key === "Enter") saveGroupEdit();
-																	if (e.key === "Escape") cancelGroupEdit();
-																}}
-																autoFocus
-															/>
-															<ColorPicker
-																type="color"
-																value={editingGroup.color}
-																onChange={(e) =>
-																	setEditingGroup({
-																		...editingGroup,
-																		color: e.target.value,
-																	})
-																}
-															/>
-														</>
-													) : (
-														<GroupTitle>{group.title}</GroupTitle>
-													)}
-
-													{(() => {
-														if (!(group.enabled ?? true)) {
-															return (
-																<StatusBadge
-																	$isDue={false}
-																	style={{
-																		backgroundColor: "#f3f4f6",
-																		color: "#6b7280",
-																		border: "1px solid #d1d5db",
-																	}}
-																>
-																	paused
-																</StatusBadge>
-															);
-														}
-														// Check if all items in the group are disabled
-														const hasEnabledItems = group.items.some(
-															(item) => item.enabled !== false,
-														);
-														if (!hasEnabledItems) {
-															return (
-																<StatusBadge
-																	$isDue={false}
-																	style={{
-																		backgroundColor: "#f3f4f6",
-																		color: "#6b7280",
-																		border: "1px solid #d1d5db",
-																	}}
-																>
-																	paused
-																</StatusBadge>
-															);
-														}
-														const diff = group.nextDueTime - nowTs;
-														if (diff <= 0) {
-															return (
-																<StatusBadge $isDue={true}>due now</StatusBadge>
-															);
-														}
-														return (
-															<CountdownBadge $isDue={false}>
-																{formatCountdown(diff)}
-															</CountdownBadge>
-														);
-													})()}
-
-													{editingGroup?.id === group.id ? (
-														<>
-															<span>every</span>
-															<EditableInterval
-																type="number"
-																min="1"
-																max="240"
-																value={editingGroup.interval}
-																onChange={(e) =>
-																	setEditingGroup({
-																		...editingGroup,
-																		interval: Number(e.target.value) || 1,
-																	})
-																}
-															/>
-															<span>min</span>
-														</>
-													) : (
-														<Badge>every {group.intervalMinutes} min</Badge>
-													)}
-												</div>
-
-												<div
-													style={{
-														display: "flex",
-														alignItems: "center",
-														gap: "0.5rem",
-													}}
-												>
-													{editingGroup?.id === group.id ? (
-														<EditButtonGroup>
-															<SmallButton
-																type="button"
-																$variant="success"
-																onClick={saveGroupEdit}
-															>
-																<FaCheck />
-															</SmallButton>
-															<SmallButton
-																type="button"
-																onClick={cancelGroupEdit}
-															>
-																<FaXmark />
-															</SmallButton>
-														</EditButtonGroup>
-													) : (
-														<>
-															<GroupActionsButton
-																type="button"
-																onClick={() => startEditingGroup(group)}
-																title="Edit group"
-															>
-																<FaPencil />
-															</GroupActionsButton>
-															<GroupActionsButton
-																type="button"
-																onClick={() => moveGroup(group.id, -1)}
-																title="Move group up"
-																disabled={idx === 0}
-															>
-																<FaArrowUp />
-															</GroupActionsButton>
-															<GroupActionsButton
-																type="button"
-																onClick={() => moveGroup(group.id, 1)}
-																title="Move group down"
-																disabled={idx === groups.length - 1}
-															>
-																<FaArrowDown />
-															</GroupActionsButton>
-														</>
-													)}
-
-													<ToggleSwitch
-														$enabled={group.enabled ?? true}
-														onClick={() => toggleGroupEnabled(group.id)}
-														title={
-															(group.enabled ?? true)
-																? "Disable group"
-																: "Enable group"
-														}
-													/>
-
-													<GroupActionsButton
-														type="button"
-														$variant="danger"
-														onClick={() => setGroupToDelete(group)}
-														title="Delete group"
-													>
-														<FaTrash />
-													</GroupActionsButton>
-												</div>
-											</TitleRow>
-											<GroupItems>
-												<AnimatePresence mode="popLayout" initial={false}>
-													{getSortedGroupItems(group).map((i, idx) => {
-														// Current item is the first enabled item (since disabled items are at bottom)
-														const isCurrentItem =
-															i.id === group.items[group.currentItemIndex]?.id;
-														const isGroupDue = group.nextDueTime <= nowTs;
-														return (
-															<GroupItemRow
-																key={i.id}
-																layoutId={i.id}
-																layout="position"
-																$enabled={i.enabled ?? true}
-																transition={{
-																	layout: {
-																		duration: 0.4,
-																		ease: [0.4, 0.0, 0.2, 1], // Custom cubic-bezier for smooth motion
-																	},
-																	opacity: {
-																		duration: 0.3,
-																		ease: "easeInOut",
-																	},
-																	scale: {
-																		duration: 0.3,
-																		ease: "easeInOut",
-																	},
-																}}
-																initial={{
-																	opacity: 0,
-																	scale: 0.9,
-																	y: 20,
-																}}
-																animate={{
-																	opacity: 1,
-																	scale: 1,
-																	y: 0,
-																	transition: {
-																		duration: 0.3,
-																		ease: "easeOut",
-																		delay: idx * 0.05, // Stagger effect
-																	},
-																}}
-																exit={{
-																	opacity: 0,
-																	scale: 0.8,
-																	y: -20,
-																	transition: {
-																		duration: 0.2,
-																		ease: "easeIn",
-																	},
-																}}
-															>
-																<GroupItemMainRow>
-																	<GroupItemText $enabled={i.enabled ?? true}>
-																		<ItemTitleSpan>{i.title}</ItemTitleSpan>
-																		{isCurrentItem &&
-																			(i.enabled ?? true) &&
-																			(group.enabled ?? true) &&
-																			(() => {
-																				// Check if recently snoozed (within 30 seconds of snooze action)
-																				const recentlySnoozeThreshold =
-																					30 * 1000; // 30 seconds
-																				const isRecentlySnooze =
-																					group.snoozedAt &&
-																					nowTs - group.snoozedAt <
-																						recentlySnoozeThreshold;
-
-																				if (
-																					isRecentlySnooze &&
-																					group.snoozedForMinutes
-																				) {
-																					return (
-																						<StatusBadge
-																							$isDue={false}
-																							style={{
-																								backgroundColor: "#fbbf24",
-																								color: "#92400e",
-																							}}
-																						>
-																							Snoozed {group.snoozedForMinutes}m
-																						</StatusBadge>
-																					);
-																				}
-
+																			if (
+																				isRecentlySnooze &&
+																				group.snoozedForMinutes
+																			) {
 																				return (
-																					<StatusBadge $isDue={isGroupDue}>
-																						{isGroupDue
-																							? "Due now"
-																							: "Due next"}
+																					<StatusBadge
+																						$isDue={false}
+																						style={{
+																							backgroundColor: "#fbbf24",
+																							color: "#92400e",
+																						}}
+																					>
+																						Snoozed {group.snoozedForMinutes}m
 																					</StatusBadge>
 																				);
-																			})()}
-																		<GroupItemMeta>
-																			{isCurrentItem &&
-																				(() => {
-																					if (!(group.enabled ?? true)) {
-																						return (
-																							<CountdownBadge
-																								$isDue={false}
-																								$isPaused={true}
-																							>
-																								paused
-																							</CountdownBadge>
-																						);
-																					}
-																					if (!(i.enabled ?? true)) {
-																						return (
-																							<CountdownBadge
-																								$isDue={false}
-																								$isPaused={true}
-																							>
-																								paused
-																							</CountdownBadge>
-																						);
-																					}
-																					const diff =
-																						group.nextDueTime - nowTs;
-																					return diff <= 0 ? (
-																						<DueText>due now</DueText>
-																					) : (
-																						<>
-																							at {formatTime(group.nextDueTime)}
-																						</>
-																					);
-																				})()}
-																		</GroupItemMeta>
-																	</GroupItemText>
-																</GroupItemMainRow>
-																<GroupItemSecondaryRow>
+																			}
+
+																			return (
+																				<StatusBadge $isDue={isGroupDue}>
+																					{isGroupDue ? "Due now" : "Due next"}
+																				</StatusBadge>
+																			);
+																		})()}
 																	<GroupItemMeta>
-																		<strong>Last: </strong>{" "}
-																		{i.lastShownAt
-																			? formatShortDistance(i.lastShownAt)
-																			: "never"}{" "}
+																		{isCurrentItem &&
+																			(() => {
+																				if (!(group.enabled ?? true)) {
+																					return (
+																						<CountdownBadge
+																							$isDue={false}
+																							$isPaused={true}
+																						>
+																							paused
+																						</CountdownBadge>
+																					);
+																				}
+																				if (!(i.enabled ?? true)) {
+																					return (
+																						<CountdownBadge
+																							$isDue={false}
+																							$isPaused={true}
+																						>
+																							paused
+																						</CountdownBadge>
+																					);
+																				}
+																				const diff = group.nextDueTime - nowTs;
+																				return diff <= 0 ? (
+																					<DueText>due now</DueText>
+																				) : (
+																					<>
+																						at {formatTime(group.nextDueTime)}
+																					</>
+																				);
+																			})()}
 																	</GroupItemMeta>
-																	<GroupItemButtonGroup>
-																		<GroupActionsButton
-																			type="button"
-																			$variant="success"
-																			title="Mark complete"
-																			onClick={() =>
-																				completeGroupItem(group.id, i.id)
-																			}
-																		>
-																			<FaCheck />
-																		</GroupActionsButton>
+																</GroupItemText>
+															</GroupItemMainRow>
+															<GroupItemSecondaryRow>
+																<GroupItemMeta>
+																	<strong>Last: </strong>{" "}
+																	{i.lastShownAt
+																		? formatShortDistance(i.lastShownAt)
+																		: "never"}{" "}
+																</GroupItemMeta>
+																{/* GroupItemButtonGroup replaced with ResponsiveButtonGroup */}
+																<ResponsiveButtonGroup alignItems="center">
+																	<GroupActionsButton
+																		type="button"
+																		$variant="success"
+																		title="Mark complete"
+																		onClick={() =>
+																			completeGroupItem(group.id, i.id)
+																		}
+																	>
+																		<FaCheck />
+																	</GroupActionsButton>
 
-																		<GroupActionsButton
-																			type="button"
-																			$variant="warn"
-																			title="Snooze 5 minutes"
-																			onClick={() => {
-																				storeSnoozeGroup(group.id, 5);
-																				// Add log entry for snooze action
-																				storeAddLogEntry({
-																					id: uid(),
-																					reminderId: i.id,
-																					action: "snooze",
-																					at: Date.now(),
-																					text: i.title,
-																					snoozeForMinutes: 5,
-																				});
-																			}}
-																		>
-																			<FaClock style={{ marginRight: "4px" }} />
-																			5M
-																		</GroupActionsButton>
+																	<GroupActionsButton
+																		type="button"
+																		$variant="warn"
+																		title="Snooze 5 minutes"
+																		onClick={() => {
+																			storeSnoozeGroup(group.id, 5);
+																			// Add log entry for snooze action
+																			storeAddLogEntry({
+																				id: uid(),
+																				reminderId: i.id,
+																				action: "snooze",
+																				at: Date.now(),
+																				text: i.title,
+																				snoozeForMinutes: 5,
+																			});
+																		}}
+																	>
+																		<FaClock style={{ marginRight: "4px" }} />
+																		5M
+																	</GroupActionsButton>
 
-																		<ToggleSwitch
-																			$enabled={i.enabled ?? true}
-																			onClick={() =>
-																				toggleGroupItemEnabled(group.id, i.id)
-																			}
-																			title={
-																				(i.enabled ?? true)
-																					? "Disable item"
-																					: "Enable item"
-																			}
-																		/>
+																	<ToggleSwitch
+																		$enabled={i.enabled ?? true}
+																		onClick={() =>
+																			toggleGroupItemEnabled(group.id, i.id)
+																		}
+																		title={
+																			(i.enabled ?? true)
+																				? "Disable item"
+																				: "Enable item"
+																		}
+																	/>
 
-																		<GroupActionsButton
-																			type="button"
-																			$variant="danger"
-																			onClick={() =>
-																				deleteGroupItem(group.id, i.id)
-																			}
-																			title="Delete item"
-																		>
-																			<FaTrash color="#fff" />
-																		</GroupActionsButton>
-																	</GroupItemButtonGroup>
-																</GroupItemSecondaryRow>
-															</GroupItemRow>
-														);
-													})}
-												</AnimatePresence>
-											</GroupItems>
-										</GroupCard>
-									))}
-								</AnimatePresence>
-							)}
-						</GroupList>
-					</RemindersSection>
-				</Layout>
+																	<GroupActionsButton
+																		type="button"
+																		$variant="danger"
+																		onClick={() =>
+																			deleteGroupItem(group.id, i.id)
+																		}
+																		title="Delete item"
+																	>
+																		<FaTrash color="#fff" />
+																	</GroupActionsButton>
+																</ResponsiveButtonGroup>
+															</GroupItemSecondaryRow>
+														</GroupItemRow>
+													);
+												})}
+											</AnimatePresence>
+										</Flex>
+									</GroupCard>
+								))}
+							</AnimatePresence>
+						)}
+					</Flex>
+				</RemindersSection>
+			</Layout>
 
-				<Footer>
-					Runs entirely in your browser. Data stored via localStorage. Keep this
-					tab open.
-				</Footer>
+			<Footer>
+				Runs entirely in your browser. Data stored via localStorage. Keep this
+				tab open.
+			</Footer>
 
-				{/* Due modal */}
-				<Modal open={!!dueGroupItem}>
-					{dueGroupItem && (
-						<div>
-							<CenterText>
-								<h3>{dueGroupItem.group.title}</h3>
-							</CenterText>
-							<CenterText className="big">{dueGroupItem.item.title}</CenterText>
-							<ModalMetaInfo>
-								{(() => {
-									const today = new Date().toDateString();
-									const todayEntries = logEntries.filter(
-										(entry) =>
-											entry.reminderId === dueGroupItem.item.id &&
-											entry.action === "done" &&
-											new Date(entry.at).toDateString() === today,
-									);
-									const todayCompletions = todayEntries.length;
-									const lastEntry = logEntries
-										.filter(
-											(entry) =>
-												entry.reminderId === dueGroupItem.item.id &&
-												entry.action === "done",
-										)
-										.slice(-1)[0];
-									const lastDone = lastEntry
-										? formatShortDistance(lastEntry.at)
-										: "never";
-									return (
-										<>
-											Last done: <strong>{lastDone}</strong> •{" "}
-											{todayCompletions} time{todayCompletions !== 1 ? "s" : ""}{" "}
-											today
-										</>
-									);
-								})()}
-							</ModalMetaInfo>
-							<ModalButtons>
-								<Button
-									type="button"
-									$variant="success"
-									onClick={() => {
-										completeGroupItem(
-											dueGroupItem.group.id,
-											dueGroupItem.item.id,
-										);
-										setDueGroupItem(null);
-									}}
-								>
-									<FaCheck style={{ marginRight: "4px" }} />
-									Done
-								</Button>
-								<Button
-									type="button"
-									$variant="warn"
-									onClick={() => {
-										// Snooze the group by 5 minutes
-										storeSnoozeGroup(dueGroupItem.group.id, 5);
-										// Add log entry for snooze action
-										const currentItem =
-											dueGroupItem.group.items[
-												dueGroupItem.group.currentItemIndex
-											];
-										if (currentItem) {
-											storeAddLogEntry({
-												id: uid(),
-												reminderId: currentItem.id,
-												action: "snooze",
-												at: Date.now(),
-												text: currentItem.title,
-												snoozeForMinutes: 5,
-											});
-										}
-										setDueGroupItem(null);
-									}}
-								>
-									<FaClock style={{ marginRight: "4px" }} />
-									5M
-								</Button>
-								<Button
-									type="button"
-									$variant="warn"
-									onClick={() => {
-										// Snooze the group by 10 minutes
-										storeSnoozeGroup(dueGroupItem.group.id, 10);
-										// Add log entry for snooze action
-										const currentItem =
-											dueGroupItem.group.items[
-												dueGroupItem.group.currentItemIndex
-											];
-										if (currentItem) {
-											storeAddLogEntry({
-												id: uid(),
-												reminderId: currentItem.id,
-												action: "snooze",
-												at: Date.now(),
-												text: currentItem.title,
-												snoozeForMinutes: 10,
-											});
-										}
-										setDueGroupItem(null);
-									}}
-								>
-									<FaClock style={{ marginRight: "4px" }} />
-									10M
-								</Button>
-							</ModalButtons>
-						</div>
-					)}
-				</Modal>
+			{/* Modals */}
+			<DueItemModal
+				dueGroupItem={dueGroupItem}
+				setDueGroupItem={setDueGroupItem}
+				logEntries={logEntries}
+				completeGroupItem={completeGroupItem}
+				storeSnoozeGroup={storeSnoozeGroup}
+				storeAddLogEntry={storeAddLogEntry}
+			/>
 
-				{/* Delete group confirmation modal */}
-				<Modal open={!!groupToDelete}>
-					{groupToDelete && (
-						<div>
-							<CenterText>
-								<h3>Delete Group</h3>
-							</CenterText>
-							<CenterText>
-								Are you sure you want to delete "{groupToDelete.title}"?
-							</CenterText>
-							<CenterText
-								className="small"
-								style={{ marginTop: "0.5rem", color: "#6b7280" }}
-							>
-								This will permanently delete {groupToDelete.items.length} item
-								{groupToDelete.items.length !== 1 ? "s" : ""} and cannot be
-								undone.
-							</CenterText>
-							<ModalButtons>
-								<Button type="button" onClick={() => setGroupToDelete(null)}>
-									Cancel
-								</Button>
-								<Button
-									type="button"
-									$variant="danger"
-									onClick={() => deleteGroup(groupToDelete)}
-								>
-									Delete Group
-								</Button>
-							</ModalButtons>
-						</div>
-					)}
-				</Modal>
+			<DeleteGroupModal
+				groupToDelete={groupToDelete}
+				setGroupToDelete={setGroupToDelete}
+				deleteGroup={deleteGroup}
+			/>
 
-				{/* First point celebration modal */}
-				<Modal open={showFirstPointModal}>
-					<div>
-						<CenterText>
-							<h3>🎉 Congratulations! 🎉</h3>
-						</CenterText>
-						<CenterText className="big">First Point Earned!</CenterText>
-						<CenterText style={{ marginBottom: "2rem" }}>
-							You completed your first reminder loop! Keep it up and build your
-							streak. Your score will now appear in the header.
-						</CenterText>
-						<ModalButtons>
-							<Button
-								type="button"
-								$variant="success"
-								onClick={() => setShowFirstPointModal(false)}
-							>
-								Awesome! 🚀
-							</Button>
-						</ModalButtons>
+			<CelebrationModals
+				showFirstPointModal={showFirstPointModal}
+				setShowFirstPointModal={setShowFirstPointModal}
+				tierUpgradeModal={tierUpgradeModal}
+				setTierUpgradeModal={setTierUpgradeModal}
+			/>
+
+			{/* Settings Modal - keeping inline for now due to complexity */}
+			<Modal open={showSettingsModal}>
+				<div>
+					<div
+						style={{
+							display: "flex",
+							justifyContent: "space-between",
+							alignItems: "center",
+							marginBottom: "1rem",
+						}}
+					>
+						<h3 style={{ margin: 0 }}>Settings</h3>
+						<Button
+							type="button"
+							onClick={() => setShowSettingsModal(false)}
+							title="Close settings"
+						>
+							<FaXmark />
+						</Button>
 					</div>
-				</Modal>
 
-				{/* Tier upgrade celebration modal */}
-				<Modal open={!!tierUpgradeModal}>
-					{tierUpgradeModal && (
-						<div>
-							<CenterText>
-								<h3>
-									{tierUpgradeModal.emoji} {tierUpgradeModal.title}{" "}
-									{tierUpgradeModal.emoji}
-								</h3>
-							</CenterText>
-							<CenterText className="big">Level Up!</CenterText>
-							<CenterText style={{ marginBottom: "2rem" }}>
-								{tierUpgradeModal.message}
-							</CenterText>
-							<ModalButtons>
-								<Button
-									type="button"
-									$variant="success"
-									onClick={() => setTierUpgradeModal(null)}
-									style={{ backgroundColor: tierUpgradeModal.color }}
-								>
-									Continue the Journey ✨
-								</Button>
-							</ModalButtons>
-						</div>
-					)}
-				</Modal>
-
-				{/* Settings Modal */}
-				<Modal open={showSettingsModal}>
-					<div>
+					<div style={{ padding: "1rem 0" }}>
+						<h4 style={{ marginBottom: "0.5rem" }}>Notification Sound</h4>
 						<div
 							style={{
 								display: "flex",
-								justifyContent: "space-between",
 								alignItems: "center",
-								marginBottom: "1rem",
+								gap: "0.5rem",
+								marginBottom: "0.5rem",
 							}}
 						>
-							<h3 style={{ margin: 0 }}>Settings</h3>
 							<Button
 								type="button"
-								onClick={() => setShowSettingsModal(false)}
-								title="Close settings"
+								onClick={() => {
+									const currentIndex = SOUND_CONFIGS.findIndex(
+										(s) => s.id === selectedSoundId,
+									);
+									const prevIndex =
+										currentIndex > 0
+											? currentIndex - 1
+											: SOUND_CONFIGS.length - 1;
+									const prevSound = SOUND_CONFIGS[prevIndex];
+									setSelectedSoundId(prevSound.id);
+									// Preview the sound
+									const soundConfig = getSoundConfig(prevSound.id);
+									playSound(soundConfig);
+								}}
+								title="Previous sound"
+								style={{ minWidth: "40px", height: "40px" }}
 							>
-								<FaXmark />
+								<FaArrowLeft />
+							</Button>
+							<Select
+								value={{
+									value: selectedSoundId,
+									label:
+										SOUND_CONFIGS.find((s) => s.id === selectedSoundId)?.name ||
+										"Unknown",
+								}}
+								onChange={(option) => {
+									if (option) {
+										setSelectedSoundId(option.value);
+										// Preview the sound when selected
+										const soundConfig = getSoundConfig(option.value);
+										playSound(soundConfig);
+									}
+								}}
+								options={SOUND_CONFIGS.map((config) => ({
+									value: config.id,
+									label: config.name,
+								}))}
+								placeholder="Select a notification sound..."
+								isSearchable={false}
+								styles={{
+									control: (base) => ({
+										...base,
+										minHeight: "40px",
+									}),
+									container: (base) => ({
+										...base,
+										flex: 1,
+									}),
+								}}
+							/>
+							<Button
+								type="button"
+								onClick={() => {
+									const currentIndex = SOUND_CONFIGS.findIndex(
+										(s) => s.id === selectedSoundId,
+									);
+									const nextIndex =
+										currentIndex < SOUND_CONFIGS.length - 1
+											? currentIndex + 1
+											: 0;
+									const nextSound = SOUND_CONFIGS[nextIndex];
+									setSelectedSoundId(nextSound.id);
+									// Preview the sound
+									const soundConfig = getSoundConfig(nextSound.id);
+									playSound(soundConfig);
+								}}
+								title="Next sound"
+								style={{ minWidth: "40px", height: "40px" }}
+							>
+								<FaArrowRight />
+							</Button>
+							<Button
+								type="button"
+								onClick={() => {
+									// Preview the currently selected sound
+									const soundConfig = getSoundConfig(selectedSoundId);
+									playSound(soundConfig);
+								}}
+								title="Play current sound"
+								style={{ minWidth: "40px", height: "40px" }}
+							>
+								<FaPlay />
 							</Button>
 						</div>
+						<p
+							style={{
+								fontSize: "0.875rem",
+								color: "#666",
+								margin: "0.5rem 0 0 0",
+							}}
+						>
+							Use arrows to cycle through sounds, play button to preview current
+							selection, or click dropdown to choose directly
+						</p>
+					</div>
 
-						<div style={{ padding: "1rem 0" }}>
-							<h4 style={{ marginBottom: "0.5rem" }}>Notification Sound</h4>
-							<div
-								style={{
-									display: "flex",
-									alignItems: "center",
-									gap: "0.5rem",
-									marginBottom: "0.5rem",
-								}}
-							>
-								<Button
-									type="button"
-									onClick={() => {
-										const currentIndex = SOUND_CONFIGS.findIndex(
-											(s) => s.id === selectedSoundId,
-										);
-										const prevIndex =
-											currentIndex > 0
-												? currentIndex - 1
-												: SOUND_CONFIGS.length - 1;
-										const prevSound = SOUND_CONFIGS[prevIndex];
-										setSelectedSoundId(prevSound.id);
-										// Preview the sound
-										const soundConfig = getSoundConfig(prevSound.id);
-										playSound(soundConfig);
-									}}
-									title="Previous sound"
-									style={{ minWidth: "40px", height: "40px" }}
-								>
-									<FaArrowLeft />
-								</Button>
-								<Select
-									value={{
-										value: selectedSoundId,
-										label:
-											SOUND_CONFIGS.find((s) => s.id === selectedSoundId)
-												?.name || "Unknown",
-									}}
-									onChange={(option) => {
-										if (option) {
-											setSelectedSoundId(option.value);
-											// Preview the sound when selected
-											const soundConfig = getSoundConfig(option.value);
-											playSound(soundConfig);
-										}
-									}}
-									options={SOUND_CONFIGS.map((config) => ({
-										value: config.id,
-										label: config.name,
-									}))}
-									placeholder="Select a notification sound..."
-									isSearchable={false}
-									styles={{
-										control: (base) => ({
-											...base,
-											minHeight: "40px",
-										}),
-										container: (base) => ({
-											...base,
-											flex: 1,
-										}),
-									}}
-								/>
-								<Button
-									type="button"
-									onClick={() => {
-										const currentIndex = SOUND_CONFIGS.findIndex(
-											(s) => s.id === selectedSoundId,
-										);
-										const nextIndex =
-											currentIndex < SOUND_CONFIGS.length - 1
-												? currentIndex + 1
-												: 0;
-										const nextSound = SOUND_CONFIGS[nextIndex];
-										setSelectedSoundId(nextSound.id);
-										// Preview the sound
-										const soundConfig = getSoundConfig(nextSound.id);
-										playSound(soundConfig);
-									}}
-									title="Next sound"
-									style={{ minWidth: "40px", height: "40px" }}
-								>
-									<FaArrowRight />
-								</Button>
-								<Button
-									type="button"
-									onClick={() => {
-										// Preview the currently selected sound
-										const soundConfig = getSoundConfig(selectedSoundId);
-										playSound(soundConfig);
-									}}
-									title="Play current sound"
-									style={{ minWidth: "40px", height: "40px" }}
-								>
-									<FaPlay />
-								</Button>
-							</div>
-							<p
-								style={{
-									fontSize: "0.875rem",
-									color: "#666",
-									margin: "0.5rem 0 0 0",
-								}}
-							>
-								Use arrows to cycle through sounds, play button to preview
-								current selection, or click dropdown to choose directly
-							</p>
+					<div style={{ padding: "1rem 0" }}>
+						<h4 style={{ marginBottom: "0.5rem" }}>Display Options</h4>
+						<div
+							style={{
+								display: "flex",
+								alignItems: "center",
+								gap: "0.5rem",
+								marginBottom: "0.5rem",
+							}}
+						>
+							<span>Show Activity Log</span>
+							<ToggleSwitch
+								$enabled={showActivityLog}
+								onClick={() => setShowActivityLog(!showActivityLog)}
+								title={
+									showActivityLog ? "Hide activity log" : "Show activity log"
+								}
+							/>
 						</div>
+						<p
+							style={{
+								fontSize: "0.875rem",
+								color: "#666",
+								margin: "0.5rem 0 0 0",
+							}}
+						>
+							Toggle visibility of the activity log sidebar
+						</p>
 
-						<div style={{ padding: "1rem 0" }}>
-							<h4 style={{ marginBottom: "0.5rem" }}>Display Options</h4>
+						<div style={{ marginTop: "1rem" }}>
+							<h5 style={{ marginBottom: "0.5rem", margin: "0 0 0.5rem 0" }}>
+								Activity Log Items
+							</h5>
 							<div
 								style={{
 									display: "flex",
@@ -1735,156 +1510,351 @@ export default function App() {
 									marginBottom: "0.5rem",
 								}}
 							>
-								<span>Show Activity Log</span>
-								<ToggleSwitch
-									$enabled={showActivityLog}
-									onClick={() => setShowActivityLog(!showActivityLog)}
-									title={
-										showActivityLog ? "Hide activity log" : "Show activity log"
-									}
-								/>
-							</div>
-							<p
-								style={{
-									fontSize: "0.875rem",
-									color: "#666",
-									margin: "0.5rem 0 0 0",
-								}}
-							>
-								Toggle visibility of the activity log sidebar
-							</p>
-
-							<div style={{ marginTop: "1rem" }}>
-								<h5 style={{ marginBottom: "0.5rem", margin: "0 0 0.5rem 0" }}>
-									Activity Log Items
-								</h5>
+								<span style={{ fontSize: "0.875rem", color: "#666" }}>
+									Only show last
+								</span>
 								<div
 									style={{
 										display: "flex",
-										alignItems: "center",
-										gap: "0.5rem",
-										marginBottom: "0.5rem",
+										borderRadius: "6px",
+										border: "1px solid #e6e6ef",
+										overflow: "hidden",
+										backgroundColor: "#f7f7fb",
 									}}
 								>
-									<span style={{ fontSize: "0.875rem", color: "#666" }}>
-										Only show last
-									</span>
-									<div
-										style={{
-											display: "flex",
-											borderRadius: "6px",
-											border: "1px solid #e6e6ef",
-											overflow: "hidden",
-											backgroundColor: "#f7f7fb",
-										}}
-									>
-										{[10, 25, 50, 100].map((limit, index) => (
-											<button
-												key={limit}
-												type="button"
-												onClick={() => {
-													setActivityLogLimit(limit);
-													setActivityLogPage(0);
-												}}
-												style={{
-													padding: "0.5rem 1rem",
-													border: "none",
-													backgroundColor:
-														activityLogLimit === limit
-															? "#4f46e5"
-															: "transparent",
-													color: activityLogLimit === limit ? "white" : "#111",
-													cursor: "pointer",
-													fontSize: "0.875rem",
-													fontWeight:
-														activityLogLimit === limit ? "600" : "400",
-													borderRight: index < 3 ? "1px solid #e6e6ef" : "none",
-													transition: "all 0.2s ease",
-													minWidth: "40px",
-												}}
-												onMouseEnter={(e) => {
-													if (activityLogLimit !== limit) {
-														e.currentTarget.style.backgroundColor = "#e6e6ef";
-													}
-												}}
-												onMouseLeave={(e) => {
-													if (activityLogLimit !== limit) {
-														e.currentTarget.style.backgroundColor =
-															"transparent";
-													}
-												}}
-											>
-												{limit}
-											</button>
-										))}
-									</div>
-									<span style={{ fontSize: "0.875rem", color: "#666" }}>
-										items
-									</span>
+									{[10, 25, 50, 100].map((limit, index) => (
+										<button
+											key={limit}
+											type="button"
+											onClick={() => {
+												setActivityLogLimit(limit);
+												setActivityLogPage(0);
+											}}
+											style={{
+												padding: "0.5rem 1rem",
+												border: "none",
+												backgroundColor:
+													activityLogLimit === limit
+														? "#4f46e5"
+														: "transparent",
+												color: activityLogLimit === limit ? "white" : "#111",
+												cursor: "pointer",
+												fontSize: "0.875rem",
+												fontWeight: activityLogLimit === limit ? "600" : "400",
+												borderRight: index < 3 ? "1px solid #e6e6ef" : "none",
+												transition: "all 0.2s ease",
+												minWidth: "40px",
+											}}
+											onMouseEnter={(e) => {
+												if (activityLogLimit !== limit) {
+													e.currentTarget.style.backgroundColor = "#e6e6ef";
+												}
+											}}
+											onMouseLeave={(e) => {
+												if (activityLogLimit !== limit) {
+													e.currentTarget.style.backgroundColor = "transparent";
+												}
+											}}
+										>
+											{limit}
+										</button>
+									))}
 								</div>
-								<p
+								<span style={{ fontSize: "0.875rem", color: "#666" }}>
+									items
+								</span>
+							</div>
+							<p
+								style={{
+									fontSize: "0.875rem",
+									color: "#666",
+									margin: "0 0 0 0",
+								}}
+							>
+								{activityLogLimit > 20
+									? "Items will be paginated (20 per page)"
+									: "All items shown on one page"}
+							</p>
+						</div>
+					</div>
+
+					<Flex wrap="wrap" gap="0.5rem" justifyContent="center">
+						<Button type="button" onClick={() => setShowSettingsModal(false)}>
+							Close
+						</Button>
+					</Flex>
+				</div>
+			</Modal>
+
+			{/* Modals */}
+			<DueItemModal
+				dueGroupItem={dueGroupItem}
+				setDueGroupItem={setDueGroupItem}
+				logEntries={logEntries}
+				completeGroupItem={completeGroupItem}
+				storeSnoozeGroup={storeSnoozeGroup}
+				storeAddLogEntry={storeAddLogEntry}
+			/>
+
+			<DeleteGroupModal
+				groupToDelete={groupToDelete}
+				setGroupToDelete={setGroupToDelete}
+				deleteGroup={deleteGroup}
+			/>
+
+			<CelebrationModals
+				showFirstPointModal={showFirstPointModal}
+				setShowFirstPointModal={setShowFirstPointModal}
+				tierUpgradeModal={tierUpgradeModal}
+				setTierUpgradeModal={setTierUpgradeModal}
+			/>
+
+			{/* Settings Modal - keeping inline for now due to complexity */}
+			<Modal open={showSettingsModal}>
+				<div>
+					<div
+						style={{
+							display: "flex",
+							justifyContent: "space-between",
+							alignItems: "center",
+							marginBottom: "1rem",
+						}}
+					>
+						<h3 style={{ margin: 0 }}>Settings</h3>
+						<Button
+							type="button"
+							onClick={() => setShowSettingsModal(false)}
+							title="Close settings"
+						>
+							<FaXmark />
+						</Button>
+					</div>
+
+					<div style={{ padding: "1rem 0" }}>
+						<h4 style={{ marginBottom: "0.5rem" }}>Notification Sound</h4>
+						<div
+							style={{
+								display: "flex",
+								alignItems: "center",
+								gap: "0.5rem",
+								marginBottom: "0.5rem",
+							}}
+						>
+							<Button
+								type="button"
+								onClick={() => {
+									const currentIndex = SOUND_CONFIGS.findIndex(
+										(s) => s.id === selectedSoundId,
+									);
+									const prevIndex =
+										currentIndex > 0
+											? currentIndex - 1
+											: SOUND_CONFIGS.length - 1;
+									const prevSound = SOUND_CONFIGS[prevIndex];
+									setSelectedSoundId(prevSound.id);
+									// Preview the sound
+									const soundConfig = getSoundConfig(prevSound.id);
+									playSound(soundConfig);
+								}}
+								title="Previous sound"
+								style={{ minWidth: "40px", height: "40px" }}
+							>
+								<FaArrowLeft />
+							</Button>
+							<Select
+								value={{
+									value: selectedSoundId,
+									label:
+										SOUND_CONFIGS.find((s) => s.id === selectedSoundId)?.name ||
+										"Unknown",
+								}}
+								onChange={(option) => {
+									if (option) {
+										setSelectedSoundId(option.value);
+										// Preview the sound when selected
+										const soundConfig = getSoundConfig(option.value);
+										playSound(soundConfig);
+									}
+								}}
+								options={SOUND_CONFIGS.map((config) => ({
+									value: config.id,
+									label: config.name,
+								}))}
+								placeholder="Select a notification sound..."
+								isSearchable={false}
+								styles={{
+									control: (base) => ({
+										...base,
+										minHeight: "40px",
+									}),
+									container: (base) => ({
+										...base,
+										flex: 1,
+									}),
+								}}
+							/>
+							<Button
+								type="button"
+								onClick={() => {
+									const currentIndex = SOUND_CONFIGS.findIndex(
+										(s) => s.id === selectedSoundId,
+									);
+									const nextIndex =
+										currentIndex < SOUND_CONFIGS.length - 1
+											? currentIndex + 1
+											: 0;
+									const nextSound = SOUND_CONFIGS[nextIndex];
+									setSelectedSoundId(nextSound.id);
+									// Preview the sound
+									const soundConfig = getSoundConfig(nextSound.id);
+									playSound(soundConfig);
+								}}
+								title="Next sound"
+								style={{ minWidth: "40px", height: "40px" }}
+							>
+								<FaArrowRight />
+							</Button>
+							<Button
+								type="button"
+								onClick={() => {
+									// Preview the currently selected sound
+									const soundConfig = getSoundConfig(selectedSoundId);
+									playSound(soundConfig);
+								}}
+								title="Play current sound"
+								style={{ minWidth: "40px", height: "40px" }}
+							>
+								<FaPlay />
+							</Button>
+						</div>
+						<p
+							style={{
+								fontSize: "0.875rem",
+								color: "#666",
+								margin: "0.5rem 0 0 0",
+							}}
+						>
+							Use arrows to cycle through sounds, play button to preview current
+							selection, or click dropdown to choose directly
+						</p>
+					</div>
+
+					<div style={{ padding: "1rem 0" }}>
+						<h4 style={{ marginBottom: "0.5rem" }}>Display Options</h4>
+						<div
+							style={{
+								display: "flex",
+								alignItems: "center",
+								gap: "0.5rem",
+								marginBottom: "0.5rem",
+							}}
+						>
+							<span>Show Activity Log</span>
+							<ToggleSwitch
+								$enabled={showActivityLog}
+								onClick={() => setShowActivityLog(!showActivityLog)}
+								title={
+									showActivityLog ? "Hide activity log" : "Show activity log"
+								}
+							/>
+						</div>
+						<p
+							style={{
+								fontSize: "0.875rem",
+								color: "#666",
+								margin: "0.5rem 0 0 0",
+							}}
+						>
+							Toggle visibility of the activity log sidebar
+						</p>
+
+						<div style={{ marginTop: "1rem" }}>
+							<h5 style={{ marginBottom: "0.5rem", margin: "0 0 0.5rem 0" }}>
+								Activity Log Items
+							</h5>
+							<div
+								style={{
+									display: "flex",
+									alignItems: "center",
+									gap: "0.5rem",
+									marginBottom: "0.5rem",
+								}}
+							>
+								<span style={{ fontSize: "0.875rem", color: "#666" }}>
+									Only show last
+								</span>
+								<div
 									style={{
-										fontSize: "0.875rem",
-										color: "#666",
-										margin: "0 0 0 0",
+										display: "flex",
+										borderRadius: "6px",
+										border: "1px solid #e6e6ef",
+										overflow: "hidden",
+										backgroundColor: "#f7f7fb",
 									}}
 								>
-									{activityLogLimit > 20
-										? "Items will be paginated (20 per page)"
-										: "All items shown on one page"}
-								</p>
+									{[10, 25, 50, 100].map((limit, index) => (
+										<button
+											key={limit}
+											type="button"
+											onClick={() => {
+												setActivityLogLimit(limit);
+												setActivityLogPage(0);
+											}}
+											style={{
+												padding: "0.5rem 1rem",
+												border: "none",
+												backgroundColor:
+													activityLogLimit === limit
+														? "#4f46e5"
+														: "transparent",
+												color: activityLogLimit === limit ? "white" : "#111",
+												cursor: "pointer",
+												fontSize: "0.875rem",
+												fontWeight: activityLogLimit === limit ? "600" : "400",
+												borderRight: index < 3 ? "1px solid #e6e6ef" : "none",
+												transition: "all 0.2s ease",
+												minWidth: "40px",
+											}}
+											onMouseEnter={(e) => {
+												if (activityLogLimit !== limit) {
+													e.currentTarget.style.backgroundColor = "#e6e6ef";
+												}
+											}}
+											onMouseLeave={(e) => {
+												if (activityLogLimit !== limit) {
+													e.currentTarget.style.backgroundColor = "transparent";
+												}
+											}}
+										>
+											{limit}
+										</button>
+									))}
+								</div>
+								<span style={{ fontSize: "0.875rem", color: "#666" }}>
+									items
+								</span>
 							</div>
+							<p
+								style={{
+									fontSize: "0.875rem",
+									color: "#666",
+									margin: "0 0 0 0",
+								}}
+							>
+								{activityLogLimit > 20
+									? "Items will be paginated (20 per page)"
+									: "All items shown on one page"}
+							</p>
 						</div>
-
-						<ModalButtons>
-							<Button type="button" onClick={() => setShowSettingsModal(false)}>
-								Close
-							</Button>
-						</ModalButtons>
 					</div>
-				</Modal>
-			</AppContainer>
-		</>
-	);
-}
 
-function WakeLockSwitch({
-	acquire,
-	release,
-}: { acquire: () => Promise<void>; release: () => Promise<void> }) {
-	const [enabled, setEnabled] = useState(false);
-
-	useEffect(() => {
-		const onVisibility = async () => {
-			if (document.visibilityState === "visible" && enabled) {
-				await acquire();
-			}
-		};
-		document.addEventListener("visibilitychange", onVisibility);
-		return () => document.removeEventListener("visibilitychange", onVisibility);
-	}, [enabled, acquire]);
-
-	return (
-		<WakeLockButton
-			type="button"
-			$enabled={enabled}
-			onClick={async () => {
-				if (!enabled) {
-					await acquire();
-					setEnabled(true);
-				} else {
-					await release();
-					setEnabled(false);
-				}
-			}}
-			title={
-				enabled
-					? "Screen locked awake - click to unlock"
-					: "Screen can sleep - click to lock awake"
-			}
-		>
-			<BsDisplay />
-			{enabled ? <FaLock /> : <FaLockOpen />}
-		</WakeLockButton>
+					<Flex wrap="wrap" gap="0.5rem" justifyContent="center">
+						<Button type="button" onClick={() => setShowSettingsModal(false)}>
+							Close
+						</Button>
+					</Flex>
+				</div>
+			</Modal>
+		</AppLayout>
 	);
 }

@@ -1,5 +1,9 @@
 import { motion } from "motion/react";
 import styled, { createGlobalStyle } from "styled-components";
+import { Button as DSButton } from "./design-system/interactions/Button";
+import { Flex } from "./design-system/layout/Flex";
+import { Grid } from "./design-system/layout/Grid";
+import { Text } from "./design-system/typography/Text";
 
 // ---- Global Styles ----
 export const GlobalStyle = createGlobalStyle`
@@ -20,27 +24,22 @@ export const GlobalStyle = createGlobalStyle`
 `;
 
 // ---- Main Layout Components ----
-export const AppContainer = styled.div`
+// AppContainer component simplified to use Flex layout properties
+export const AppContainer = styled(Flex)`
 	min-height: 100vh;
 	background-color: #fafafa;
 	color: #333;
 	font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-	display: flex;
-	flex-direction: column;
 `;
 
-export const Header = styled.header`
+export const Header = styled(Grid)`
 	background: white;
 	border-bottom: 1px solid #e0e0e0;
 	padding: 1rem 1.5rem;
-	display: grid;
-	grid-template-columns: 1fr auto 1fr;
-	align-items: center;
 	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 `;
 
-export const HeaderTitle = styled.h1`
-	margin: 0;
+export const HeaderTitle = styled(Text).attrs({ as: "h1" })`
 	font-size: 1.5rem;
 	font-weight: 600;
 	color: #8d8d8d;
@@ -74,12 +73,7 @@ export const HeaderScore = styled.div<{
 	`}
 `;
 
-export const HeaderActions = styled.div`
-	display: flex;
-	align-items: center;
-	gap: 1rem;
-	justify-self: end;
-`;
+// HeaderActions component removed - use Flex component directly in JSX with alignItems="center" gap="1rem" justifySelf="end"
 
 export const Layout = styled.div<{ $showActivityLog?: boolean }>`
 	/* margin: 0 auto; */
@@ -100,7 +94,7 @@ export const Layout = styled.div<{ $showActivityLog?: boolean }>`
 	overflow-y: auto;
 	height: 100%;
 	
-	@media (max-width: 768px) {
+	@media (max-width: 1200px) {
 		grid-template-areas: ${(props) =>
 			props.$showActivityLog
 				? `
@@ -124,10 +118,8 @@ export const Card = styled.div`
 	border: 1px solid #e0e0e0;
 `;
 
-export const GroupCard = styled(motion.div)<{
-	$borderColor?: string;
-	$enabled?: boolean;
-}>`
+// biome-ignore format: multiline definition breaks syntax highlighting
+export const GroupCard = styled(motion.div)<{ $borderColor?: string; $enabled?: boolean; }>`
 	background: white;
 	border-radius: 8px;
 	padding: 1.5rem;
@@ -145,84 +137,58 @@ export const CardContent = styled.div`
 	min-height: 0;
 `;
 
-export const Sidebar = styled.aside`
-	display: flex;
-	flex-direction: column;
-	gap: 1rem;
+// Sidebar component simplified to use Flex layout properties
+export const Sidebar = styled(Flex)`
 	height: 100%;
 	grid-area: activity-log;
 `;
 
-export const SidebarHeader = styled.div`
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-`;
+// SidebarHeader component removed - use Flex component directly in JSX with justifyContent="space-between" alignItems="center"
 
-export const Main = styled.main`
-	display: flex;
-	flex-direction: column;
-	gap: 1.5rem;
+// Main component simplified to use Flex layout properties
+export const Main = styled(Flex)`
 	height: 100%;
 	grid-area: form;
 `;
 
 // ---- Form Components ----
-export const Button = styled.button<{
+export const Button = styled(DSButton).attrs<{
+	$variant?: "primary" | "success" | "warn" | "danger";
+}>((props) => ({
+	// When no custom variant is specified, use design system "subtle" variant
+	variant: props.$variant ? undefined : "subtle",
+}))<{
 	$variant?: "primary" | "success" | "warn" | "danger";
 }>`
-  padding: 0.5rem 1rem;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  background: white;
-  color: #374151;
-  font-size: 0.875rem;
-  font-weight: 500;
-  transition: all 0.2s;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-
-  &:not(:disabled):hover {
-    cursor: pointer;
-    background: #f3f4f6;
-    border-color: #bfc6d1;
-  }
-
   &:disabled {
     filter: grayscale(100%);
     opacity: 0.5;
   }
 
-  &:focus {
-    outline: none;
-    box-shadow: 0 0 0 2px #60a5fa;
-  }
-
   ${(props) =>
 		props.$variant === "primary" &&
 		`
-    background: #60a5fa;
-    color: white;
-    border-color: #60a5fa;
+    background: #60a5fa !important;
+    color: white !important;
+    border: 1px solid #60a5fa !important;
 
     &:not(:disabled):hover {
-      background: #3b82f6;
-      border-color: #3b82f6;
+      background: #3b82f6 !important;
+      border-color: #3b82f6 !important;
     }
   `}
 
   ${(props) =>
 		props.$variant === "success" &&
 		`
-    background: #6ee7b7;
-    color: #065f46;
-    border-color: #6ee7b7;
+    background: #6ee7b7 !important;
+    color: #065f46 !important;
+    border: 1px solid #6ee7b7 !important;
 
     &:not(:disabled):hover {
-      background: #34d399;
-      border-color: #34d399;
-      color: #065f46;
+      background: #34d399 !important;
+      border-color: #34d399 !important;
+      color: #065f46 !important;
     }
 
     & * {
@@ -233,14 +199,14 @@ export const Button = styled.button<{
   ${(props) =>
 		props.$variant === "warn" &&
 		`
-    background: #fde68a;
-    color: #92400e;
-    border-color: #fde68a;
+    background: #fde68a !important;
+    color: #92400e !important;
+    border: 1px solid #fde68a !important;
 
     &:not(:disabled):hover {
-      background: #fbbf24;
-      border-color: #fbbf24;
-      color: #92400e;
+      background: #fbbf24 !important;
+      border-color: #fbbf24 !important;
+      color: #92400e !important;
     }
 
     & * {
@@ -251,14 +217,14 @@ export const Button = styled.button<{
   ${(props) =>
 		props.$variant === "danger" &&
 		`
-    background: #fca5a5;
-    color: #991b1b;
-    border-color: #fca5a5;
+    background: #fca5a5 !important;
+    color: #991b1b !important;
+    border: 1px solid #fca5a5 !important;
 
     &:not(:disabled):hover {
-      background: #f87171;
-      border-color: #f87171;
-      color: #991b1b;
+      background: #f87171 !important;
+      border-color: #f87171 !important;
+      color: #991b1b !important;
     }
 
     & * {
@@ -268,25 +234,25 @@ export const Button = styled.button<{
 `;
 
 export const WakeLockButton = styled(Button)<{ $enabled?: boolean }>`
-	width: 48px;
-	height: 32px;
-	padding: 0;
-	display: grid;
-	grid-template-columns: 1fr 1fr;
-	align-items: center;
-	justify-items: center;
-	gap: 2px;
+	height: 38px;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 20px 22px;
+  align-items: center;
+  justify-items: center;
+  gap: 3px;
+  padding-inline: 0.8rem;
 
 	${(props) =>
 		props.$enabled &&
 		`
-		background: #fbbf24;
-		color: #92400e;
-		border-color: #fbbf24;
+		background: #3063c9;
+		color: #fff;
+		border-color: #3063c9;
 
 		&:not(:disabled):hover {
-			background: #f59e0b;
-			border-color: #f59e0b;
+			background: #4d77ca;
+			border-color: #4d77ca;
 		}
 	`}
 `;
@@ -383,7 +349,7 @@ export const Label = styled.label`
 	color: #374151;
 `;
 
-export const Grid = styled.div`
+export const FormGrid = styled.div`
   margin-top: 2rem;
 	display: grid;
 	grid-template-columns: 1fr auto auto;
@@ -391,12 +357,7 @@ export const Grid = styled.div`
 	align-items: end;
 `;
 
-export const Row = styled.div`
-	display: flex;
-	align-items: center;
-	gap: 0.5rem;
-	margin-bottom: 0.5rem;
-`;
+// Row component removed - use Flex component directly in JSX with alignItems="center" gap="0.5rem" mb="0.5rem"
 
 export const Badge = styled.span<{ $variant?: "primary" }>`
 	padding: 0.25rem 0.5rem;
@@ -414,7 +375,7 @@ export const Badge = styled.span<{ $variant?: "primary" }>`
 	`}
 `;
 
-export const MutedText = styled.span<{ $small?: boolean }>`
+export const MutedText = styled(Text)<{ $small?: boolean }>`
 	color: #6b7280;
 	${(props) => props.$small && "font-size: 0.75rem;"}
 `;
@@ -478,45 +439,19 @@ export const ModalContent = styled.div`
 	box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
 `;
 
-export const ModalActions = styled.div`
-	display: flex;
-	justify-content: center;
-	gap: 1rem;
-	margin-top: 1.5rem;
-`;
+// ModalActions component removed - use Flex component directly in JSX with justifyContent="center" gap="1rem" mt="1.5rem"
 
-export const ModalButtons = styled.div`
-	display: flex;
-	flex-wrap: wrap;
-	gap: 0.5rem;
-	justify-content: center;
-`;
+// ModalButtons component removed - use Flex component directly in JSX with wrap="wrap" gap="0.5rem" justifyContent="center"
 
 // ---- Group Components ----
-export const RemindersSection = styled.section`
-	display: flex;
-	flex-direction: column;
-	gap: 1rem;
+// RemindersSection component simplified to use Flex layout properties
+export const RemindersSection = styled(Flex)`
 	grid-area: reminders;
 `;
 
-export const GroupList = styled.div`
-	display: flex;
-	flex-direction: column;
-	gap: 1rem;
-`;
+// GroupList component removed - use Flex component directly in JSX with direction="column" gap="1rem"
 
-export const TitleRow = styled.div`
-	display: flex;
-	align-items: center;
-	margin-bottom: 1rem;
-	gap: 0.5rem;
-	
-	/* Push the last item (interval badge) to the right */
-	> :last-child {
-		margin-left: auto;
-	}
-`;
+// TitleRow component removed - use Flex component directly in JSX with alignItems="center" mb="1rem" gap="0.5rem" and use ml="auto" on the last child or justifyContent="space-between"
 
 export const GroupTitle = styled.div`
 	font-size: 1.125rem;
@@ -532,11 +467,7 @@ export const GroupTitle = styled.div`
 	}
 `;
 
-export const GroupItems = styled.div`
-	display: flex;
-	flex-direction: column;
-	gap: 0.75rem;
-`;
+// GroupItems component removed - use Flex component directly in JSX with direction="column" gap="0.75rem"
 
 export const GroupItemRow = styled(motion.div)<{ $enabled?: boolean }>`
 	display: flex;
@@ -584,7 +515,7 @@ export const GroupItemSecondaryRow = styled.div`
 	/* Make buttons smaller on mobile */
 	button {
 		font-size: 0.8rem;
-		padding: 0.4rem 0.6rem;
+		/* padding: 0.4rem 0.6rem; */
 		
 		@media (min-width: 768px) {
 			font-size: 0.875rem;
@@ -592,9 +523,8 @@ export const GroupItemSecondaryRow = styled.div`
 	}
 `;
 
-export const GroupItemButtonGroup = styled.div`
-	display: flex;
-	align-items: center;
+// Special responsive flex component for group item buttons
+export const ResponsiveButtonGroup = styled(Flex)`
 	gap: 0.4rem;
 	
 	@media (min-width: 768px) {
@@ -666,12 +596,7 @@ export const RemindersTitle = styled.h3`
 	margin-bottom: 1rem;
 `;
 
-export const GroupItemFormRow = styled(Row)`
-	gap: 8px;
-	align-items: center;
-	margin-bottom: 8px;
-	flex-direction: row;
-`;
+// GroupItemFormRow component removed - use Flex component directly in JSX with gap="8px" alignItems="center" mb="8px" direction="row"
 
 export const FlexInput = styled(Input)`
 	flex: 1;
@@ -743,7 +668,7 @@ export const DevContainer = styled.div`
 	margin-top: 8px;
 `;
 
-export const CenterText = styled.div`
+export const CenterText = styled(Text)`
 	text-align: center;
 
   h3 {
@@ -802,11 +727,7 @@ export const EditableInterval = styled.input`
 	}
 `;
 
-export const EditButtonGroup = styled.div`
-	display: flex;
-	gap: 0.25rem;
-	margin-left: 0.5rem;
-`;
+// EditButtonGroup component removed - use Flex component directly in JSX with gap="0.25rem" ml="0.5rem"
 
 export const SmallButton = styled(Button)`
 	padding: 0.25rem 0.5rem;
@@ -830,8 +751,4 @@ export const GroupActionsButton = styled(Button)`
   }
 `;
 
-export const TopForm = styled.div`
-	display: flex;
-	gap: 1rem;
-	align-items: flex-end;
-`;
+// TopForm component removed - use Flex component directly in JSX with gap="1rem" alignItems="flex-end"
