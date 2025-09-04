@@ -146,7 +146,7 @@ export const Sidebar = styled(Flex)`
 // SidebarHeader component removed - use Flex component directly in JSX with justifyContent="space-between" alignItems="center"
 
 // Main component simplified to use Flex layout properties
-export const Main = styled(Flex)`
+export const FormContainer = styled(Flex)`
 	height: 100%;
 	grid-area: form;
 `;

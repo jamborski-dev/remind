@@ -2,9 +2,8 @@ import { FaCheck, FaClock } from "react-icons/fa6";
 import type { DueGroupItem, LogEntry } from "../store";
 import { uid } from "../utils/helpers";
 import { formatShortDistance } from "../utils/time";
-import { Modal } from "./Modal";
 import { Button } from "./ReminderApp.styled";
-import { Flex } from "./design-system/layout/Flex";
+import { Modal } from "./design-system/feedback/Modal";
 
 interface DueItemModalProps {
 	dueGroupItem: DueGroupItem | null;
@@ -37,19 +36,6 @@ const CenterText = ({
 	</div>
 );
 
-const ModalMetaInfo = ({ children }: { children: React.ReactNode }) => (
-	<div
-		style={{
-			textAlign: "center",
-			fontSize: "0.875rem",
-			color: "#6b7280",
-			marginBottom: "1rem",
-		}}
-	>
-		{children}
-	</div>
-);
-
 export function DueItemModal({
 	dueGroupItem,
 	setDueGroupItem,
@@ -59,14 +45,18 @@ export function DueItemModal({
 	storeAddLogEntry,
 }: DueItemModalProps) {
 	return (
-		<Modal open={!!dueGroupItem}>
+		<Modal.Root isOpen={!!dueGroupItem} onClose={() => setDueGroupItem(null)}>
 			{dueGroupItem && (
-				<div>
-					<CenterText>
+				<>
+					<Modal.Header>
 						<h3>{dueGroupItem.group.title}</h3>
-					</CenterText>
-					<CenterText className="big">{dueGroupItem.item.title}</CenterText>
-					<ModalMetaInfo>
+					</Modal.Header>
+
+					<Modal.Body>
+						<CenterText className="big">{dueGroupItem.item.title}</CenterText>
+					</Modal.Body>
+
+					<Modal.MetaInfo>
 						{(() => {
 							const today = new Date().toDateString();
 							const todayEntries = logEntries.filter(
@@ -93,8 +83,9 @@ export function DueItemModal({
 								</>
 							);
 						})()}
-					</ModalMetaInfo>
-					<Flex wrap="wrap" gap="0.5rem" justifyContent="center">
+					</Modal.MetaInfo>
+
+					<Modal.Actions>
 						<Button
 							type="button"
 							$variant="success"
@@ -156,9 +147,9 @@ export function DueItemModal({
 							<FaClock style={{ marginRight: "4px" }} />
 							10M
 						</Button>
-					</Flex>
-				</div>
+					</Modal.Actions>
+				</>
 			)}
-		</Modal>
+		</Modal.Root>
 	);
 }

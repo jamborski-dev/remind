@@ -1,7 +1,6 @@
 import type { ReminderGroup } from "../store";
-import { Modal } from "./Modal";
 import { Button } from "./ReminderApp.styled";
-import { Flex } from "./design-system/layout/Flex";
+import { Modal } from "./design-system/feedback/Modal";
 
 interface DeleteGroupModalProps {
 	groupToDelete: ReminderGroup | null;
@@ -37,20 +36,25 @@ export function DeleteGroupModal({
 	deleteGroup,
 }: DeleteGroupModalProps) {
 	return (
-		<Modal open={!!groupToDelete}>
+		<Modal.Root isOpen={!!groupToDelete} onClose={() => setGroupToDelete(null)}>
 			{groupToDelete && (
-				<div>
-					<CenterText>
+				<>
+					<Modal.Header>
 						<h3>Delete Group</h3>
-					</CenterText>
-					<CenterText>
-						Are you sure you want to delete "{groupToDelete.title}"?
-					</CenterText>
-					<CenterText className="small" style={{ marginTop: "0.5rem" }}>
-						This will permanently delete {groupToDelete.items.length} item
-						{groupToDelete.items.length !== 1 ? "s" : ""} and cannot be undone.
-					</CenterText>
-					<Flex wrap="wrap" gap="0.5rem" justifyContent="center">
+					</Modal.Header>
+
+					<Modal.Body>
+						<CenterText>
+							Are you sure you want to delete "{groupToDelete.title}"?
+						</CenterText>
+						<CenterText className="small" style={{ marginTop: "0.5rem" }}>
+							This will permanently delete {groupToDelete.items.length} item
+							{groupToDelete.items.length !== 1 ? "s" : ""} and cannot be
+							undone.
+						</CenterText>
+					</Modal.Body>
+
+					<Modal.Actions>
 						<Button type="button" onClick={() => setGroupToDelete(null)}>
 							Cancel
 						</Button>
@@ -61,9 +65,9 @@ export function DeleteGroupModal({
 						>
 							Delete Group
 						</Button>
-					</Flex>
-				</div>
+					</Modal.Actions>
+				</>
 			)}
-		</Modal>
+		</Modal.Root>
 	);
 }
