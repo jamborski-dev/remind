@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useCurrentTime } from "../contexts/TimeContext";
 import { type ReminderGroup, useAppStore } from "../store";
 import { Group } from "./Group";
 
@@ -6,7 +7,6 @@ interface GroupContainerProps {
 	group: ReminderGroup;
 	idx: number;
 	totalGroups: number;
-	nowTs: number;
 }
 
 /**
@@ -17,8 +17,10 @@ export const GroupContainer = ({
 	group,
 	idx,
 	totalGroups,
-	nowTs,
 }: GroupContainerProps) => {
+	// Get current time from context (only this component re-renders when time changes)
+	const nowTs = useCurrentTime();
+
 	const {
 		// Form states needed for editing
 		editingGroup,

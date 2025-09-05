@@ -304,7 +304,7 @@ export const buildSeedGroups = (creationTime: number): ReminderGroup[] => {
 		{
 			id: uid(),
 			title: "Health & Wellness",
-			intervalMinutes: 120, // 2 hours
+			intervalMinutes: 5, // 5 minutes for dev testing
 			color: "#10b981",
 			items: mkItems([
 				"Drink water",
@@ -315,12 +315,12 @@ export const buildSeedGroups = (creationTime: number): ReminderGroup[] => {
 			createdAt: creationTime,
 			enabled: true,
 			currentItemIndex: 0,
-			nextDueTime: creationTime + 120 * 60 * 1000,
+			nextDueTime: creationTime + 5 * 60 * 1000,
 		},
 		{
 			id: uid(),
 			title: "Focus & Productivity",
-			intervalMinutes: 90, // 1.5 hours
+			intervalMinutes: 3, // 3 minutes for dev testing
 			color: "#3b82f6",
 			items: mkItems([
 				"Review priorities",
@@ -331,12 +331,12 @@ export const buildSeedGroups = (creationTime: number): ReminderGroup[] => {
 			createdAt: creationTime + 1,
 			enabled: true,
 			currentItemIndex: 0,
-			nextDueTime: creationTime + 90 * 60 * 1000,
+			nextDueTime: creationTime + 3 * 60 * 1000,
 		},
 		{
 			id: uid(),
 			title: "Social Connection",
-			intervalMinutes: 240, // 4 hours
+			intervalMinutes: 8, // 8 minutes for dev testing
 			color: "#8b5cf6",
 			items: mkItems([
 				"Send a message to someone",
@@ -347,7 +347,7 @@ export const buildSeedGroups = (creationTime: number): ReminderGroup[] => {
 			createdAt: creationTime + 2,
 			enabled: true,
 			currentItemIndex: 0,
-			nextDueTime: creationTime + 240 * 60 * 1000,
+			nextDueTime: creationTime + 8 * 60 * 1000,
 		},
 	];
 };

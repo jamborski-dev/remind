@@ -10,7 +10,6 @@ import { useAppStore } from "../store";
 export const useGroups = () => useAppStore((state) => state.groups);
 export const useLogEntries = () => useAppStore((state) => state.logEntries);
 export const useScore = () => useAppStore((state) => state.score);
-export const useNowTs = () => useAppStore((state) => state.nowTs);
 
 // Modal state selectors
 export const useDueGroupItem = () => useAppStore((state) => state.dueGroupItem);
@@ -38,7 +37,6 @@ export const useSetGroups = () => useAppStore((state) => state.setGroups);
 export const useSetLogEntries = () =>
 	useAppStore((state) => state.setLogEntries);
 export const useSetScore = () => useAppStore((state) => state.setScore);
-export const useSetNowTs = () => useAppStore((state) => state.setNowTs);
 
 export const useSetDueGroupItem = () =>
 	useAppStore((state) => state.setDueGroupItem);

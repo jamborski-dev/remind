@@ -53,7 +53,6 @@ interface AppState {
 	groups: ReminderGroup[];
 	logEntries: LogEntry[];
 	score: number;
-	nowTs: number;
 
 	// Modal states
 	dueGroupItem: DueGroupItem | null;
@@ -82,7 +81,6 @@ interface AppState {
 	setGroups: (groups: ReminderGroup[]) => void;
 	setLogEntries: (entries: LogEntry[]) => void;
 	setScore: (score: number) => void;
-	setNowTs: (timestamp: number) => void;
 
 	setDueGroupItem: (item: DueGroupItem | null) => void;
 	setShowFirstPointModal: (show: boolean) => void;
@@ -223,7 +221,6 @@ export const useAppStore = create<AppState>()((set, get) => ({
 	groups: loadGroups(),
 	logEntries: loadLog(),
 	score: loadScore(),
-	nowTs: now(),
 
 	dueGroupItem: null,
 	showFirstPointModal: false,
@@ -265,8 +262,6 @@ export const useAppStore = create<AppState>()((set, get) => ({
 		set({ score });
 		saveScore(score);
 	},
-
-	setNowTs: (nowTs) => set({ nowTs }),
 
 	setDueGroupItem: (dueGroupItem) => set({ dueGroupItem }),
 	setShowFirstPointModal: (showFirstPointModal) => set({ showFirstPointModal }),

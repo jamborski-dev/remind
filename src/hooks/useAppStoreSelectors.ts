@@ -12,7 +12,6 @@ export function useAppStoreSelectors() {
 		groups: store.groups,
 		logEntries: store.logEntries,
 		score: store.score,
-		nowTs: store.nowTs,
 
 		// Modal states
 		modals: {
@@ -36,7 +35,6 @@ export function useAppStoreSelectors() {
 			setGroups: store.setGroups,
 			setLogEntries: store.setLogEntries,
 			setScore: store.setScore,
-			setNowTs: store.setNowTs,
 		},
 
 		// Actions - Modals

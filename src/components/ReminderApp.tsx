@@ -1,5 +1,6 @@
 import { AnimatePresence } from "motion/react";
 import { useCallback, useEffect, useMemo } from "react";
+import { TimeProvider } from "../contexts/TimeContext";
 import { useActivityLog } from "../hooks/useActivityLog";
 import { useGroupScheduler } from "../hooks/useGroupScheduler";
 import { useModalState as useModalOpenState } from "../hooks/useModalState";
@@ -9,7 +10,6 @@ import {
 	useIncrementScore,
 	useLogEntries,
 	useModalState as useModalStateSelectors,
-	useNowTs,
 	useRemoveGroup,
 	useScore,
 	useSetActivityLogLimit,
@@ -17,7 +17,6 @@ import {
 	useSetGroupToDelete,
 	useSetGroups,
 	useSetLogEntries,
-	useSetNowTs,
 	useSetScore,
 	useSetSelectedSoundId,
 	useSetShowActivityLog,
@@ -63,7 +62,6 @@ export default function App() {
 	const groups = useGroups(); // Only re-renders when groups change
 	const logEntries = useLogEntries(); // Only re-renders when log entries change
 	const score = useScore(); // Only re-renders when score changes
-	const nowTs = useNowTs(); // Only re-renders when time changes
 
 	// Memoized modal and settings state - grouped for convenience but still selective
 	const modals = useModalStateSelectors(); // Memoized to prevent object recreation
@@ -73,7 +71,6 @@ export default function App() {
 	const setGroups = useSetGroups();
 	const setLogEntries = useSetLogEntries();
 	const setScore = useSetScore();
-	const setNowTs = useSetNowTs();
 
 	const setDueGroupItem = useSetDueGroupItem();
 	const setShowFirstPointModal = useSetShowFirstPointModal();
@@ -124,16 +121,6 @@ export default function App() {
 		setShowFirstPointModal,
 		setTierUpgradeModal,
 	);
-
-	// Live countdown ticker for reminder cards - pause when modals are open
-	useEffect(() => {
-		if (anyModalOpen) {
-			// Don't update time when any modal is open (pauses all timers)
-			return;
-		}
-		const id = setInterval(() => setNowTs(Date.now()), 1000);
-		return () => clearInterval(id);
-	}, [setNowTs, anyModalOpen]);
 
 	// Group scheduler - check for due group items - pause when modals are open
 	useGroupScheduler({
@@ -229,82 +216,83 @@ export default function App() {
 	}, []);
 
 	return (
-		<AppLayout {...appLayoutProps}>
-			<Layout $showActivityLog={showActivityLog}>
-				{showActivityLog && (
-					<Sidebar direction="column" gap="1rem">
-						<Card>
-							<Flex
-								justifyContent="space-between"
-								alignItems="center"
-								mb="1rem"
-							>
-								<h2 style={{ fontSize: "1rem" }}>Activity log</h2>
-								<Button type="button" onClick={handleClearTodaysActivity}>
-									Clear
-								</Button>
-							</Flex>
+		<TimeProvider paused={anyModalOpen}>
+			<AppLayout {...appLayoutProps}>
+				<Layout $showActivityLog={showActivityLog}>
+					{showActivityLog && (
+						<Sidebar direction="column" gap="1rem">
+							<Card>
+								<Flex
+									justifyContent="space-between"
+									alignItems="center"
+									mb="1rem"
+								>
+									<h2 style={{ fontSize: "1rem" }}>Activity log</h2>
+									<Button type="button" onClick={handleClearTodaysActivity}>
+										Clear
+									</Button>
+								</Flex>
 
-							<CardContent>
-								<ActivityLogTable {...activityLogTableProps} />
-							</CardContent>
-						</Card>
-					</Sidebar>
-				)}
+								<CardContent>
+									<ActivityLogTable {...activityLogTableProps} />
+								</CardContent>
+							</Card>
+						</Sidebar>
+					)}
 
-				<FormContainer direction="column" gap="1.5rem">
-					<ReminderGroupFormContainer />
-				</FormContainer>
+					<FormContainer direction="column" gap="1.5rem">
+						<ReminderGroupFormContainer />
+					</FormContainer>
 
-				<RemindersSection direction="column" gap="1rem">
-					<Flex direction="column" gap="1rem">
-						{groups.length === 0 ? (
-							<MutedText>No groups yet. Add one above.</MutedText>
-						) : (
-							<AnimatePresence mode="popLayout" initial={false}>
-								{groups.map((group: ReminderGroup, idx: number) => (
-									<GroupContainer
-										key={group.id}
-										group={group}
-										idx={idx}
-										totalGroups={groups.length}
-										nowTs={nowTs}
-									/>
-								))}
-							</AnimatePresence>
-						)}
-					</Flex>
-				</RemindersSection>
-			</Layout>
+					<RemindersSection direction="column" gap="1rem">
+						<Flex direction="column" gap="1rem">
+							{groups.length === 0 ? (
+								<MutedText>No groups yet. Add one above.</MutedText>
+							) : (
+								<AnimatePresence mode="popLayout" initial={false}>
+									{groups.map((group: ReminderGroup, idx: number) => (
+										<GroupContainer
+											key={group.id}
+											group={group}
+											idx={idx}
+											totalGroups={groups.length}
+										/>
+									))}
+								</AnimatePresence>
+							)}
+						</Flex>
+					</RemindersSection>
+				</Layout>
 
-			{/* Modals */}
-			<DueItemModalContainer />
+				{/* Modals */}
+				<DueItemModalContainer />
 
-			<DeleteGroupModal
-				groupToDelete={groupToDelete}
-				setGroupToDelete={setGroupToDelete}
-				deleteGroup={deleteGroup}
-			/>
+				<DeleteGroupModal
+					groupToDelete={groupToDelete}
+					setGroupToDelete={setGroupToDelete}
+					deleteGroup={deleteGroup}
+				/>
 
-			<CelebrationModals
-				showFirstPointModal={showFirstPointModal}
-				setShowFirstPointModal={setShowFirstPointModal}
-				tierUpgradeModal={tierUpgradeModal}
-				setTierUpgradeModal={setTierUpgradeModal}
-			/>
+				<CelebrationModals
+					showFirstPointModal={showFirstPointModal}
+					setShowFirstPointModal={setShowFirstPointModal}
+					tierUpgradeModal={tierUpgradeModal}
+					setTierUpgradeModal={setTierUpgradeModal}
+				/>
 
-			{/* Settings Modal */}
-			<SettingsModal
-				isOpen={showSettingsModal}
-				onClose={() => setShowSettingsModal(false)}
-				selectedSoundId={selectedSoundId}
-				setSelectedSoundId={setSelectedSoundId}
-				showActivityLog={showActivityLog}
-				setShowActivityLog={setShowActivityLog}
-				activityLogLimit={activityLogLimit}
-				setActivityLogLimit={setActivityLogLimit}
-				setActivityLogPage={setActivityLogPage}
-			/>
-		</AppLayout>
+				{/* Settings Modal */}
+				<SettingsModal
+					isOpen={showSettingsModal}
+					onClose={() => setShowSettingsModal(false)}
+					selectedSoundId={selectedSoundId}
+					setSelectedSoundId={setSelectedSoundId}
+					showActivityLog={showActivityLog}
+					setShowActivityLog={setShowActivityLog}
+					activityLogLimit={activityLogLimit}
+					setActivityLogLimit={setActivityLogLimit}
+					setActivityLogPage={setActivityLogPage}
+				/>
+			</AppLayout>
+		</TimeProvider>
 	);
 }
