@@ -1,5 +1,7 @@
 import { AnimatePresence } from "motion/react";
 import { useCallback, useEffect, useMemo } from "react";
+import { TIER_MESSAGES } from "../constants/scoring-messages";
+import { getSoundConfig, playSound } from "../constants/sounds";
 import { TimeProvider } from "../contexts/TimeContext";
 import { useActivityLog } from "../hooks/useActivityLog";
 import { useGroupScheduler } from "../hooks/useGroupScheduler";
@@ -27,8 +29,6 @@ import {
 	useSettings,
 } from "../hooks/useSelectiveStoreHooks";
 import { useWakeLock } from "../hooks/useWakeLock";
-import { TIER_MESSAGES } from "../scoring-messages";
-import { getSoundConfig, playSound } from "../sounds";
 import type { ReminderGroup } from "../store";
 import {
 	buildSeedGroups,

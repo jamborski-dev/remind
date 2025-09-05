@@ -1,5 +1,6 @@
 import { FaGear, FaRotateRight } from "react-icons/fa6";
-import type { TierInfo } from "../../scoring-messages";
+import type { TierInfo } from "../../constants/scoring-messages";
+import { DevToastTrigger } from "../DevToastTrigger";
 import {
 	AppContainer,
 	Button,
@@ -63,6 +64,7 @@ export function AppLayout({
 								<FaRotateRight />
 							</Button>
 						)}
+						{import.meta.env?.DEV && <DevToastTrigger />}
 						{wakeLockSupported && (
 							<WakeLockSwitch
 								acquire={acquireWakeLock}

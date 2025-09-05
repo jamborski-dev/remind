@@ -3,7 +3,7 @@ import {
 	TIER_MESSAGES,
 	type TierInfo,
 	calculateTier,
-} from "../scoring-messages";
+} from "../constants/scoring-messages";
 import type { ReminderGroup } from "../store";
 
 export function useScoring(

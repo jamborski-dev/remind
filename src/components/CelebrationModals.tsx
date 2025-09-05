@@ -1,4 +1,4 @@
-import type { TierInfo } from "../scoring-messages";
+import type { TierInfo } from "../constants/scoring-messages";
 import { Modal } from "./Modal";
 import { Button } from "./ReminderApp.styled";
 import { Flex } from "./design-system/layout/Flex";

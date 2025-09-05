@@ -1,4 +1,4 @@
-import { getSoundConfig, playSound } from "../sounds";
+import { getSoundConfig, playSound } from "../constants/sounds";
 import {
 	type LogEntry,
 	type ReminderGroup,

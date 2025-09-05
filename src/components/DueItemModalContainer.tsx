@@ -1,4 +1,4 @@
-import { getSoundConfig, playSound } from "../sounds";
+import { getSoundConfig, playSound } from "../constants/sounds";
 import { useAppStore } from "../store";
 import { uid } from "../utils/helpers";
 import { DueItemModal } from "./DueItemModal";

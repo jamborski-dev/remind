@@ -3,6 +3,7 @@ import { StrictMode } from "react";
 import ReactDOM from "react-dom/client";
 
 import { AppErrorBoundary } from "./components/AppErrorBoundary";
+import { ToastContainer } from "./components/ToastContainer";
 // Import the generated route tree
 import { routeTree } from "./routeTree.gen";
 
@@ -34,6 +35,7 @@ if (rootElement && !rootElement.innerHTML) {
 		<StrictMode>
 			<AppErrorBoundary>
 				<RouterProvider router={router} />
+				<ToastContainer />
 			</AppErrorBoundary>
 		</StrictMode>,
 	);

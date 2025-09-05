@@ -1,8 +1,8 @@
 import type React from "react";
 import { FaArrowLeft, FaArrowRight, FaPlay } from "react-icons/fa6";
 import Select from "react-select";
-import { SOUND_CONFIGS } from "../sounds";
-import { getSoundConfig, playSound } from "../sounds";
+import { SOUND_CONFIGS } from "../constants/sounds";
+import { getSoundConfig, playSound } from "../constants/sounds";
 import { Modal } from "./design-system/feedback/Modal";
 import { Button } from "./design-system/interactions/Button";
 

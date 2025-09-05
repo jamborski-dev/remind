@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import type { TierInfo } from "../scoring-messages";
+import type { TierInfo } from "../constants/scoring-messages";
 import type { DueGroupItem, ReminderGroup } from "../store";
 
 export function useModalState(
