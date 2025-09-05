@@ -27,13 +27,11 @@ export function useWakeLock(
 			if (document.hidden) {
 				// Page is hidden, release wake lock
 				if (wakeLockRef.current) {
-					console.log("Page hidden, releasing wake lock");
 					releaseWakeLock(wakeLockRef);
 				}
 			} else {
 				// Page is visible again, re-acquire if user had requested it
 				if (isUserRequestedRef.current && !wakeLockRef.current) {
-					console.log("Page visible, re-acquiring wake lock");
 					acquireWakeLock(wakeLockRef);
 				}
 			}
@@ -50,7 +48,6 @@ export function useWakeLock(
 	useEffect(() => {
 		return () => {
 			if (wakeLockRef.current) {
-				console.log("Component unmounting, releasing wake lock");
 				releaseWakeLock(wakeLockRef);
 				isUserRequestedRef.current = false;
 			}

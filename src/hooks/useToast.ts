@@ -20,11 +20,6 @@ export function useToast(options: UseToastOptions = {}) {
 	const { defaultDuration = 5000 } = options;
 	const [toasts, setToasts] = useState<Toast[]>([]);
 
-	console.log(
-		"useToast: Hook initialized/re-rendered, current toasts:",
-		toasts.map((t) => ({ id: t.id, title: t.title })),
-	);
-
 	const showToast = useCallback(
 		({
 			status,
@@ -33,12 +28,6 @@ export function useToast(options: UseToastOptions = {}) {
 			duration = defaultDuration,
 			onClose,
 		}: ShowToastOptions) => {
-			console.log("useToast: showToast called with", {
-				status,
-				title,
-				message,
-				duration,
-			});
 			const id = Math.random().toString(36).substr(2, 9);
 			const toast: Toast = {
 				id,
@@ -49,17 +38,8 @@ export function useToast(options: UseToastOptions = {}) {
 				onClose,
 			};
 
-			console.log("useToast: Creating toast with ID", id);
 			setToasts((prev) => {
-				console.log(
-					"useToast: Previous toasts:",
-					prev.map((t) => ({ id: t.id, title: t.title })),
-				);
 				const newToasts = [...prev, toast];
-				console.log(
-					"useToast: New toasts array:",
-					newToasts.map((t) => ({ id: t.id, title: t.title })),
-				);
 				return newToasts;
 			});
 			return id;
@@ -68,17 +48,8 @@ export function useToast(options: UseToastOptions = {}) {
 	);
 
 	const dismissToast = useCallback((id: string) => {
-		console.log("useToast: dismissToast called for ID", id);
 		setToasts((prev) => {
-			console.log(
-				"useToast: Before dismiss, toasts:",
-				prev.map((t) => ({ id: t.id, title: t.title })),
-			);
 			const filtered = prev.filter((toast) => toast.id !== id);
-			console.log(
-				"useToast: After dismiss, toasts:",
-				filtered.map((t) => ({ id: t.id, title: t.title })),
-			);
 			return filtered;
 		});
 	}, []);

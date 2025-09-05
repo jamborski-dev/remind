@@ -1,5 +1,6 @@
 import type React from "react";
 import { FaArrowLeft, FaArrowRight, FaPlay } from "react-icons/fa6";
+import { FiInfo } from "react-icons/fi";
 import Select from "react-select";
 import { SOUND_CONFIGS } from "../constants/sounds";
 import { getSoundConfig, playSound } from "../constants/sounds";
@@ -55,6 +56,31 @@ const ToggleSwitch = ({
 	</button>
 );
 
+const InfoText = ({ children }: { children: React.ReactNode }) => (
+	<div
+		style={{
+			display: "flex",
+			alignItems: "flex-start",
+			gap: "0.375rem",
+			fontSize: "0.75rem",
+			color: "#9ca3af",
+			margin: "0.375rem 0 0 0",
+			lineHeight: "1.3",
+		}}
+	>
+		<FiInfo
+			style={{
+				width: "12px",
+				height: "12px",
+				marginTop: "1px",
+				flexShrink: 0,
+				opacity: 0.7,
+			}}
+		/>
+		<span>{children}</span>
+	</div>
+);
+
 export const SettingsModal: React.FC<SettingsModalProps> = ({
 	isOpen,
 	onClose,
@@ -73,8 +99,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 			</Modal.Header>
 
 			<Modal.Body>
-				<div style={{ padding: "1rem 0" }}>
-					<h4 style={{ marginBottom: "0.5rem" }}>Notification Sound</h4>
+				{/* Notification Sound Section */}
+				<div style={{ paddingBottom: "1.5rem" }}>
+					<h4
+						style={{
+							marginBottom: "1rem",
+							marginTop: 0,
+							fontSize: "1.1rem",
+							fontWeight: "600",
+						}}
+					>
+						Notification Sound
+					</h4>
 					<div
 						style={{
 							display: "flex",
@@ -170,20 +206,33 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 							<FaPlay />
 						</Button>
 					</div>
-					<p
-						style={{
-							fontSize: "0.875rem",
-							color: "#666",
-							margin: "0.5rem 0 0 0",
-						}}
-					>
+					<InfoText>
 						Use arrows to cycle through sounds, play button to preview current
 						selection, or click dropdown to choose directly
-					</p>
+					</InfoText>
 				</div>
 
-				<div style={{ padding: "1rem 0" }}>
-					<h4 style={{ marginBottom: "0.5rem" }}>Display Options</h4>
+				{/* Section Divider */}
+				<div
+					style={{
+						height: "1px",
+						backgroundColor: "#e5e7eb",
+						margin: "1rem 0",
+					}}
+				/>
+
+				{/* Display Options Section */}
+				<div style={{ paddingBottom: "1.5rem" }}>
+					<h4
+						style={{
+							marginBottom: "1rem",
+							marginTop: 0,
+							fontSize: "1.1rem",
+							fontWeight: "600",
+						}}
+					>
+						Display Options
+					</h4>
 					<div
 						style={{
 							display: "flex",
@@ -201,18 +250,27 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 							}
 						/>
 					</div>
-					<p
+					<InfoText>Toggle visibility of the activity log sidebar</InfoText>
+
+					{/* Sub-section divider */}
+					<div
 						style={{
-							fontSize: "0.875rem",
-							color: "#666",
-							margin: "0.5rem 0 0 0",
+							height: "1px",
+							backgroundColor: "#f3f4f6",
+							margin: "1.5rem 0 1rem 0",
 						}}
-					>
-						Toggle visibility of the activity log sidebar
-					</p>
+					/>
 
 					<div style={{ marginTop: "1rem" }}>
-						<h5 style={{ marginBottom: "0.5rem", margin: "0 0 0.5rem 0" }}>
+						<h5
+							style={{
+								marginBottom: "0.75rem",
+								margin: "0 0 0.75rem 0",
+								fontSize: "1rem",
+								fontWeight: "500",
+								color: "#4b5563",
+							}}
+						>
 							Activity Log Items
 						</h5>
 						<div
@@ -273,17 +331,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 							</div>
 							<span style={{ fontSize: "0.875rem", color: "#666" }}>items</span>
 						</div>
-						<p
-							style={{
-								fontSize: "0.875rem",
-								color: "#666",
-								margin: "0 0 0 0",
-							}}
-						>
+						<InfoText>
 							{activityLogLimit > 20
 								? "Items will be paginated (20 per page)"
 								: "All items shown on one page"}
-						</p>
+						</InfoText>
 					</div>
 				</div>
 			</Modal.Body>

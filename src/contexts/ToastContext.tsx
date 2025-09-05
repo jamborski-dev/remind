@@ -44,14 +44,7 @@ interface ToastProviderProps {
 }
 
 export function ToastProvider({ children }: ToastProviderProps) {
-	console.log("ToastProvider: Rendering");
-
 	const toastMethods = useToast();
-
-	console.log(
-		"ToastProvider: Current toasts count:",
-		toastMethods.toasts.length,
-	);
 
 	return (
 		<ToastContext.Provider value={toastMethods}>

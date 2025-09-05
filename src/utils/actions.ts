@@ -204,8 +204,6 @@ export const completeGroupItem = (
 	}) => void,
 	pendingScoreRef: React.MutableRefObject<string | null>,
 ) => {
-	console.log("completeGroupItem called with:", groupId, itemId);
-
 	// Find the group and check if this completes a loop before updating
 	const group = groups.find((g) => g.id === groupId);
 	if (!group) return;
@@ -215,7 +213,6 @@ export const completeGroupItem = (
 	const isLoopCompleted = currentEnabledIndex === enabledItems.length - 1;
 
 	if (isLoopCompleted) {
-		console.log("Loop completed! Setting pending score for group:", groupId);
 		pendingScoreRef.current = groupId;
 	}
 
@@ -366,7 +363,6 @@ export const reseedDev = (
 	setGroups(seedGroups);
 	setLogEntries([]);
 	setScore(0);
-	console.log("Dev environment reseeded with sample data");
 };
 
 // ---- Wake Lock Actions ----
@@ -378,7 +374,6 @@ export const acquireWakeLock = async (
 
 	try {
 		wakeLockRef.current = await navigator.wakeLock.request("screen");
-		console.log("Wake lock acquired");
 	} catch (err) {
 		console.error("Failed to acquire wake lock:", err);
 	}
@@ -391,7 +386,6 @@ export const releaseWakeLock = async (
 		try {
 			await wakeLockRef.current.release();
 			wakeLockRef.current = null;
-			console.log("Wake lock released");
 		} catch (err) {
 			console.error("Failed to release wake lock:", err);
 		}

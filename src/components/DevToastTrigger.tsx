@@ -205,7 +205,6 @@ export function DevToastTrigger() {
 	);
 
 	const handleOptionClick = (option: ToastOption) => {
-		console.log("DevToastTrigger: Attempting to show toast", option.title);
 		showToast({
 			status: option.status,
 			title: option.title,

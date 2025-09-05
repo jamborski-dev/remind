@@ -49,7 +49,6 @@ export const useAppStore = create<AppState>((set, get, api) => ({
 	toasts: [],
 
 	showToast: (toast) => {
-		console.log("🍞 Store: showToast called", toast);
 		const newToast: Toast = {
 			id: uid(),
 			...toast,
@@ -57,7 +56,6 @@ export const useAppStore = create<AppState>((set, get, api) => ({
 
 		set((state) => {
 			const newToasts = [...state.toasts, newToast];
-			console.log("🍞 Store: Updated toasts", newToasts);
 			return { toasts: newToasts };
 		});
 
@@ -65,25 +63,19 @@ export const useAppStore = create<AppState>((set, get, api) => ({
 		if (!toast.persistent && toast.duration !== 0) {
 			const duration = toast.duration ?? 5000;
 			setTimeout(() => {
-				console.log(
-					`🍞 Store: Auto-dismissing toast ${newToast.id} after ${duration}ms`,
-				);
 				get().dismissToast(newToast.id);
 			}, duration);
 		}
 	},
 
 	dismissToast: (id) => {
-		console.log("🍞 Store: dismissToast called", id);
 		set((state) => {
 			const newToasts = state.toasts.filter((toast) => toast.id !== id);
-			console.log("🍞 Store: After dismiss, toasts:", newToasts);
 			return { toasts: newToasts };
 		});
 	},
 
 	clearAllToasts: () => {
-		console.log("🍞 Store: clearAllToasts called");
 		set({ toasts: [] });
 	},
 

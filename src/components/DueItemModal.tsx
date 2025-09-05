@@ -4,6 +4,7 @@ import { uid } from "../utils/helpers";
 import { formatShortDistance } from "../utils/time";
 import { Button } from "./ReminderApp.styled";
 import { Modal } from "./design-system/feedback/Modal";
+import { Flex } from "./design-system/layout/Flex";
 
 interface DueItemModalProps {
 	dueGroupItem: DueGroupItem | null;
@@ -49,7 +50,18 @@ export function DueItemModal({
 			{dueGroupItem && (
 				<>
 					<Modal.Header>
-						<h3>{dueGroupItem.group.title}</h3>
+						<Flex alignItems="center" gap="0.5rem">
+							<div
+								style={{
+									width: "12px",
+									height: "12px",
+									borderRadius: "50%",
+									backgroundColor: dueGroupItem.group.color,
+									flexShrink: 0,
+								}}
+							/>
+							<h3>{dueGroupItem.group.title}</h3>
+						</Flex>
 					</Modal.Header>
 
 					<Modal.Body>

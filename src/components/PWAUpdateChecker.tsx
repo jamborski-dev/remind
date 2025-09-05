@@ -90,8 +90,6 @@ export const registerSW = () => {
 			navigator.serviceWorker
 				.register("/sw.js")
 				.then((registration) => {
-					console.log("SW registered: ", registration);
-
 					// Handle updates
 					registration.addEventListener("updatefound", () => {
 						const newWorker = registration.installing;
@@ -101,14 +99,14 @@ export const registerSW = () => {
 									newWorker.state === "installed" &&
 									navigator.serviceWorker.controller
 								) {
-									console.log("New content is available; please refresh.");
+									// New content is available
 								}
 							});
 						}
 					});
 				})
 				.catch((registrationError) => {
-					console.log("SW registration failed: ", registrationError);
+					console.error("SW registration failed: ", registrationError);
 				});
 		});
 

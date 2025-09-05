@@ -30,14 +30,9 @@ export function useScoring(
 	// biome-ignore lint/correctness/useExhaustiveDependencies: this is needed for reacting to other part of state
 	useEffect(() => {
 		if (pendingScoreRef.current) {
-			console.log(
-				"Awarding point for completed loop in group:",
-				pendingScoreRef.current,
-			);
 			const prevScore = score;
 			incrementScore();
 			const newScore = prevScore + 1;
-			console.log("Score updated from", prevScore, "to", newScore);
 
 			// Calculate tiers before and after scoring
 			const prevTier = calculateTier(prevScore);
@@ -45,7 +40,6 @@ export function useScoring(
 
 			// Show first point toast if this is the first point
 			if (prevScore === 0) {
-				console.log("Showing first point toast!");
 				showSuccess(
 					"🎉 First Point Earned! 🎉",
 					"You completed your first reminder loop! Keep it up and build your streak. Your score will now appear in the header.",
@@ -54,7 +48,6 @@ export function useScoring(
 			}
 			// Show tier upgrade toast if tier has changed and it's not the first point
 			else if (prevTier !== newTier) {
-				console.log(`Tier upgraded from ${prevTier} to ${newTier}!`);
 				const tierInfo = TIER_MESSAGES[newTier];
 				showSuccess(
 					`${tierInfo.emoji} ${tierInfo.title} - Level Up! ${tierInfo.emoji}`,
@@ -71,15 +64,12 @@ export function useScoring(
 	useEffect(() => {
 		const prevScore = prevScoreRef.current;
 		if (score > prevScore) {
-			console.log("Score increased from", prevScore, "to", score);
-
 			// Calculate tiers before and after scoring
 			const prevTier = calculateTier(prevScore);
 			const newTier = calculateTier(score);
 
 			// Show first point toast if this is the first point
 			if (prevScore === 0) {
-				console.log("Showing first point toast!");
 				showSuccess(
 					"🎉 First Point Earned! 🎉",
 					"You completed your first reminder loop! Keep it up and build your streak. Your score will now appear in the header.",
@@ -88,7 +78,6 @@ export function useScoring(
 			}
 			// Show tier upgrade toast if tier has changed and it's not the first point
 			else if (prevTier !== newTier) {
-				console.log(`Tier upgraded from ${prevTier} to ${newTier}!`);
 				const tierInfo = TIER_MESSAGES[newTier];
 				showSuccess(
 					`${tierInfo.emoji} ${tierInfo.title} - Level Up! ${tierInfo.emoji}`,

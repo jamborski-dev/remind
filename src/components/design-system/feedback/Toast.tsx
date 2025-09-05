@@ -221,30 +221,19 @@ const ToastPortalContainer = styled.div`
 function ToastItem({ toast, onDismiss }: ToastProps) {
 	const config = statusConfig[toast.status];
 
-	console.log("ToastItem: Rendering toast", toast.id, toast.title);
-
 	React.useEffect(() => {
-		console.log(
-			"ToastItem: Setting up timer for toast",
-			toast.id,
-			"duration:",
-			toast.duration,
-		);
 		if (toast.duration && toast.duration > 0) {
 			const timer = setTimeout(() => {
-				console.log("ToastItem: Auto-dismissing toast", toast.id);
 				onDismiss(toast.id);
 			}, toast.duration);
 
 			return () => {
-				console.log("ToastItem: Clearing timer for toast", toast.id);
 				clearTimeout(timer);
 			};
 		}
 	}, [toast.id, toast.duration, onDismiss]);
 
 	const handleClose = () => {
-		console.log("ToastItem: Manual close for toast", toast.id);
 		onDismiss(toast.id);
 		toast.onClose?.();
 	};
@@ -252,6 +241,7 @@ function ToastItem({ toast, onDismiss }: ToastProps) {
 	return (
 		<ToastWrapper
 			status={toast.status}
+			layout
 			initial={{ opacity: 0, x: 100, scale: 0.95 }}
 			animate={{ opacity: 1, x: 0, scale: 1 }}
 			exit={{ opacity: 0, x: 100, scale: 0.95 }}
@@ -279,16 +269,9 @@ function ToastItem({ toast, onDismiss }: ToastProps) {
 export function ToastContainer({ toasts, onDismiss }: ToastContainerProps) {
 	const portalRoot = document.getElementById("toast-root") || document.body;
 
-	console.log(
-		"ToastContainer: Rendering with",
-		toasts.length,
-		"toasts:",
-		toasts.map((t) => ({ id: t.id, title: t.title })),
-	);
-
 	return createPortal(
 		<ToastPortalContainer>
-			<AnimatePresence mode="popLayout">
+			<AnimatePresence>
 				{toasts.map((toast) => (
 					<ToastItem key={toast.id} toast={toast} onDismiss={onDismiss} />
 				))}

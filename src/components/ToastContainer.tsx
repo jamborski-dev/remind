@@ -19,8 +19,6 @@ export function ToastContainer() {
 		(state) => (state as unknown as StoreWithToast).dismissToast,
 	);
 
-	console.log("🍞 ToastContainer: Rendering", toasts?.length || 0, "toasts");
-
 	// Ensure toast root exists
 	React.useLayoutEffect(() => {
 		let toastRoot = document.getElementById("toast-root");

@@ -20,8 +20,6 @@ export function useCompleteGroupItem() {
 
 	const completeGroupItem = useCallback(
 		(groupId: string, itemId: string) => {
-			console.log("completeGroupItem called with:", groupId, itemId);
-
 			// Find the group and item
 			const group = groups.find((g) => g.id === groupId);
 			if (!group) return;
@@ -54,7 +52,6 @@ export function useCompleteGroupItem() {
 
 			// Award score if loop completed
 			if (isLoopCompleted) {
-				console.log("Loop completed! Incrementing score for group:", groupId);
 				incrementScore();
 			}
 		},
