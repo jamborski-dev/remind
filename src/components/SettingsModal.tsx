@@ -1,9 +1,10 @@
 import type React from "react";
 import { FaArrowLeft, FaArrowRight, FaPlay } from "react-icons/fa6";
-import { FiInfo } from "react-icons/fi";
+import { FiCheck, FiDownload, FiInfo, FiSmartphone } from "react-icons/fi";
 import Select from "react-select";
 import { SOUND_CONFIGS } from "../constants/sounds";
 import { getSoundConfig, playSound } from "../constants/sounds";
+import { usePWAInstall } from "../hooks/usePWAInstall";
 import { Modal } from "./design-system/feedback/Modal";
 import { Button } from "./design-system/interactions/Button";
 
@@ -92,6 +93,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 	setActivityLogLimit,
 	setActivityLogPage,
 }) => {
+	const { isInstalled, installApp, getInstallInstructions, canPromptInstall } =
+		usePWAInstall();
 	return (
 		<Modal.Root isOpen={isOpen} onClose={onClose}>
 			<Modal.Header>
@@ -337,6 +340,87 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 								: "All items shown on one page"}
 						</InfoText>
 					</div>
+				</div>
+
+				{/* Section Divider */}
+				<div
+					style={{
+						height: "1px",
+						backgroundColor: "#e5e7eb",
+						margin: "1rem 0",
+					}}
+				/>
+
+				{/* PWA Installation Section */}
+				<div style={{ paddingBottom: "1.5rem" }}>
+					<h4
+						style={{
+							marginBottom: "1rem",
+							marginTop: 0,
+							fontSize: "1.1rem",
+							fontWeight: "600",
+						}}
+					>
+						App Installation
+					</h4>
+					<div
+						style={{
+							display: "flex",
+							alignItems: "center",
+							gap: "0.75rem",
+							marginBottom: "0.75rem",
+						}}
+					>
+						<div
+							style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}
+						>
+							{isInstalled ? (
+								<>
+									<FiCheck style={{ color: "#10b981", fontSize: "1.25rem" }} />
+									<span style={{ color: "#10b981", fontWeight: "500" }}>
+										App Installed
+									</span>
+								</>
+							) : (
+								<>
+									<FiSmartphone
+										style={{ color: "#6b7280", fontSize: "1.25rem" }}
+									/>
+									<span style={{ color: "#6b7280" }}>Not Installed</span>
+								</>
+							)}
+						</div>
+						{!isInstalled && canPromptInstall && (
+							<Button
+								type="button"
+								onClick={async () => {
+									await installApp();
+								}}
+								style={{
+									display: "flex",
+									alignItems: "center",
+									gap: "0.5rem",
+									fontSize: "0.875rem",
+									padding: "0.5rem 1rem",
+								}}
+							>
+								<FiDownload size={16} />
+								Install App
+							</Button>
+						)}
+					</div>
+					{isInstalled ? (
+						<InfoText>
+							re:MIND is installed as an app on your device. You can launch it
+							from your home screen or app drawer.
+						</InfoText>
+					) : (
+						<InfoText>
+							{canPromptInstall
+								? "Install re:MIND as an app for faster access and offline functionality. Click the button above to install."
+								: `To install re:MIND as an app: ${getInstallInstructions()}`}
+						</InfoText>
+					)}
 				</div>
 			</Modal.Body>
 
