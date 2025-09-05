@@ -1,10 +1,32 @@
 import { AnimatePresence } from "motion/react";
-import { useEffect } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { useActivityLog } from "../hooks/useActivityLog";
-import { useAppStoreSelectors } from "../hooks/useAppStoreSelectors";
 import { useGroupScheduler } from "../hooks/useGroupScheduler";
-import { useModalState } from "../hooks/useModalState";
+import { useModalState as useModalOpenState } from "../hooks/useModalState";
 import { useScoring } from "../hooks/useScoring";
+import {
+	useGroups,
+	useIncrementScore,
+	useLogEntries,
+	useModalState as useModalStateSelectors,
+	useNowTs,
+	useRemoveGroup,
+	useScore,
+	useSetActivityLogLimit,
+	useSetDueGroupItem,
+	useSetGroupToDelete,
+	useSetGroups,
+	useSetLogEntries,
+	useSetNowTs,
+	useSetScore,
+	useSetSelectedSoundId,
+	useSetShowActivityLog,
+	useSetShowFirstPointModal,
+	useSetShowSettingsModal,
+	useSetTierUpgradeModal,
+	useSetWakeLockSupported,
+	useSettings,
+} from "../hooks/useSelectiveStoreHooks";
 import { useWakeLock } from "../hooks/useWakeLock";
 import { TIER_MESSAGES } from "../scoring-messages";
 import { getSoundConfig, playSound } from "../sounds";
@@ -36,21 +58,38 @@ import { Flex } from "./design-system/layout/Flex";
 
 // ---- Main App ----
 export default function App() {
-	// Organized store access
-	const {
-		groups,
-		logEntries,
-		score,
-		nowTs,
-		modals,
-		settings,
-		actions,
-		modalActions,
-		settingsActions,
-		helpers,
-	} = useAppStoreSelectors();
+	// Selective store access - only subscribe to what we need
+	// This prevents unnecessary re-renders when unrelated store parts change
+	const groups = useGroups(); // Only re-renders when groups change
+	const logEntries = useLogEntries(); // Only re-renders when log entries change
+	const score = useScore(); // Only re-renders when score changes
+	const nowTs = useNowTs(); // Only re-renders when time changes
 
-	// Destructure commonly used values
+	// Memoized modal and settings state - grouped for convenience but still selective
+	const modals = useModalStateSelectors(); // Memoized to prevent object recreation
+	const settings = useSettings(); // Memoized to prevent object recreation
+
+	// Actions (stable references, won't cause re-renders)
+	const setGroups = useSetGroups();
+	const setLogEntries = useSetLogEntries();
+	const setScore = useSetScore();
+	const setNowTs = useSetNowTs();
+
+	const setDueGroupItem = useSetDueGroupItem();
+	const setShowFirstPointModal = useSetShowFirstPointModal();
+	const setTierUpgradeModal = useSetTierUpgradeModal();
+	const setGroupToDelete = useSetGroupToDelete();
+	const setShowSettingsModal = useSetShowSettingsModal();
+
+	const setSelectedSoundId = useSetSelectedSoundId();
+	const setShowActivityLog = useSetShowActivityLog();
+	const setActivityLogLimit = useSetActivityLogLimit();
+	const setWakeLockSupported = useSetWakeLockSupported();
+
+	const storeRemoveGroup = useRemoveGroup();
+	const storeIncrementScore = useIncrementScore();
+
+	// Destructure commonly used values from memoized state
 	const {
 		dueGroupItem,
 		showFirstPointModal,
@@ -66,30 +105,10 @@ export default function App() {
 		wakeLockSupported,
 	} = settings;
 
-	const { setGroups, setLogEntries, setScore, setNowTs } = actions;
-
-	const {
-		setDueGroupItem,
-		setShowFirstPointModal,
-		setTierUpgradeModal,
-		setGroupToDelete,
-		setShowSettingsModal,
-	} = modalActions;
-
-	const {
-		setSelectedSoundId,
-		setShowActivityLog,
-		setActivityLogLimit,
-		setWakeLockSupported,
-	} = settingsActions;
-
-	const { removeGroup: storeRemoveGroup, incrementScore: storeIncrementScore } =
-		helpers;
-
 	// Custom hooks for complex logic
 	const { paginatedActivity, activityLogPage, setActivityLogPage } =
 		useActivityLog(logEntries, activityLogLimit);
-	const { anyModalOpen } = useModalState(
+	const { anyModalOpen } = useModalOpenState(
 		dueGroupItem,
 		groupToDelete,
 		showFirstPointModal,
@@ -131,20 +150,72 @@ export default function App() {
 		}
 	}, [dueGroupItem, selectedSoundId]);
 
-	// Group deletion handler
+	// Group deletion handler - memoized to prevent recreation on every render
+	const deleteGroup = useCallback(
+		(group: ReminderGroup) => {
+			storeRemoveGroup(group.id);
+			setGroupToDelete(null);
+			// Clear any due modal if it's for this group
+			if (dueGroupItem?.group.id === group.id) {
+				setDueGroupItem(null);
+			}
+		},
+		[storeRemoveGroup, setGroupToDelete, dueGroupItem, setDueGroupItem],
+	);
 
-	const deleteGroup = (group: ReminderGroup) => {
-		storeRemoveGroup(group.id);
-		setGroupToDelete(null);
-		// Clear any due modal if it's for this group
-		if (dueGroupItem?.group.id === group.id) {
-			setDueGroupItem(null);
-		}
-	};
-
-	const handleClearTodaysActivity = () => {
+	// Activity log clear handler - memoized to prevent recreation
+	const handleClearTodaysActivity = useCallback(() => {
 		clearTodaysActivity(logEntries, setLogEntries, setActivityLogPage);
-	};
+	}, [logEntries, setLogEntries, setActivityLogPage]);
+
+	// Dev-only reseed handler - declared early to use in useMemo
+	const handleReseedDev = useCallback(() => {
+		localStorage.clear();
+		setDueGroupItem(null);
+		setShowFirstPointModal(false);
+		reseedDev(setGroups, setLogEntries, setScore);
+	}, [
+		setDueGroupItem,
+		setShowFirstPointModal,
+		setGroups,
+		setLogEntries,
+		setScore,
+	]);
+
+	// AppLayout props - memoized to prevent unnecessary object recreation
+	const appLayoutProps = useMemo(
+		() => ({
+			currentTier: TIER_MESSAGES[currentTier],
+			score,
+			groupsCount: groups.length,
+			reseedDev: handleReseedDev,
+			wakeLockSupported,
+			acquireWakeLock: handleAcquireWakeLock,
+			releaseWakeLock: handleReleaseWakeLock,
+			setShowSettingsModal,
+		}),
+		[
+			currentTier,
+			score,
+			groups.length,
+			handleReseedDev,
+			wakeLockSupported,
+			handleAcquireWakeLock,
+			handleReleaseWakeLock,
+			setShowSettingsModal,
+		],
+	);
+
+	// Activity log table props - memoized to prevent unnecessary re-renders
+	const activityLogTableProps = useMemo(
+		() => ({
+			paginatedActivity,
+			groups,
+			activityLogPage,
+			setActivityLogPage,
+		}),
+		[paginatedActivity, groups, activityLogPage, setActivityLogPage],
+	);
 
 	// ---- Seed builder for demo/dev ----
 	// Quick starter content if empty
@@ -156,25 +227,9 @@ export default function App() {
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
-	// Dev-only reseed handler
-	const handleReseedDev = () => {
-		localStorage.clear();
-		setDueGroupItem(null);
-		setShowFirstPointModal(false);
-		reseedDev(setGroups, setLogEntries, setScore);
-	};
 
 	return (
-		<AppLayout
-			currentTier={TIER_MESSAGES[currentTier]}
-			score={score}
-			groupsCount={groups.length}
-			reseedDev={handleReseedDev}
-			wakeLockSupported={wakeLockSupported}
-			acquireWakeLock={handleAcquireWakeLock}
-			releaseWakeLock={handleReleaseWakeLock}
-			setShowSettingsModal={setShowSettingsModal}
-		>
+		<AppLayout {...appLayoutProps}>
 			<Layout $showActivityLog={showActivityLog}>
 				{showActivityLog && (
 					<Sidebar direction="column" gap="1rem">
@@ -191,12 +246,7 @@ export default function App() {
 							</Flex>
 
 							<CardContent>
-								<ActivityLogTable
-									paginatedActivity={paginatedActivity}
-									groups={groups}
-									activityLogPage={activityLogPage}
-									setActivityLogPage={setActivityLogPage}
-								/>
+								<ActivityLogTable {...activityLogTableProps} />
 							</CardContent>
 						</Card>
 					</Sidebar>
@@ -212,7 +262,7 @@ export default function App() {
 							<MutedText>No groups yet. Add one above.</MutedText>
 						) : (
 							<AnimatePresence mode="popLayout" initial={false}>
-								{groups.map((group, idx) => (
+								{groups.map((group: ReminderGroup, idx: number) => (
 									<GroupContainer
 										key={group.id}
 										group={group}

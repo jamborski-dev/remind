@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { FaCheck, FaClock } from "react-icons/fa6";
 import type { ActivityLogPagination } from "../hooks/useActivityLog";
 import type { ReminderGroup } from "../store";
@@ -13,7 +14,7 @@ interface ActivityLogTableProps {
 	setActivityLogPage: (page: number) => void;
 }
 
-export function ActivityLogTable({
+export const ActivityLogTable = memo(function ActivityLogTable({
 	paginatedActivity,
 	groups,
 	activityLogPage,
@@ -107,4 +108,4 @@ export function ActivityLogTable({
 			)}
 		</>
 	);
-}
+});
