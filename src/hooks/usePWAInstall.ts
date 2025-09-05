@@ -14,6 +14,10 @@ export function usePWAInstall() {
 		useState<BeforeInstallPromptEvent | null>(null);
 	const [isInstallable, setIsInstallable] = useState(false);
 	const [isInstalled, setIsInstalled] = useState(false);
+	const [hasUpdate, setHasUpdate] = useState(false);
+	const [waitingWorker, setWaitingWorker] = useState<ServiceWorker | null>(
+		null,
+	);
 
 	useEffect(() => {
 		// Check if app is already installed (running in standalone mode)
@@ -44,6 +48,33 @@ export function usePWAInstall() {
 
 		window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
 		window.addEventListener("appinstalled", handleAppInstalled);
+
+		// Check for service worker updates
+		if ("serviceWorker" in navigator) {
+			navigator.serviceWorker.ready.then((registration) => {
+				// Check for updates
+				registration.addEventListener("updatefound", () => {
+					const newWorker = registration.installing;
+					if (newWorker) {
+						newWorker.addEventListener("statechange", () => {
+							if (
+								newWorker.state === "installed" &&
+								navigator.serviceWorker.controller
+							) {
+								setHasUpdate(true);
+								setWaitingWorker(newWorker);
+							}
+						});
+					}
+				});
+
+				// Check if there's already a waiting worker
+				if (registration.waiting) {
+					setHasUpdate(true);
+					setWaitingWorker(registration.waiting);
+				}
+			});
+		}
 
 		return () => {
 			window.removeEventListener(
@@ -76,6 +107,16 @@ export function usePWAInstall() {
 		}
 	};
 
+	const applyUpdate = () => {
+		if (waitingWorker) {
+			waitingWorker.postMessage({ type: "SKIP_WAITING" });
+			setHasUpdate(false);
+			setWaitingWorker(null);
+			// Reload the page to get the new version
+			window.location.reload();
+		}
+	};
+
 	const getInstallInstructions = () => {
 		const userAgent = navigator.userAgent.toLowerCase();
 		const isIOS = /ipad|iphone|ipod/.test(userAgent);
@@ -105,5 +146,7 @@ export function usePWAInstall() {
 		installApp,
 		getInstallInstructions,
 		canPromptInstall: !!deferredPrompt,
+		hasUpdate,
+		applyUpdate,
 	};
 }

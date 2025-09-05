@@ -1,6 +1,12 @@
 import type React from "react";
 import { FaArrowLeft, FaArrowRight, FaPlay } from "react-icons/fa6";
-import { FiCheck, FiDownload, FiInfo, FiSmartphone } from "react-icons/fi";
+import {
+	FiCheck,
+	FiDownload,
+	FiInfo,
+	FiRefreshCw,
+	FiSmartphone,
+} from "react-icons/fi";
 import Select from "react-select";
 import { SOUND_CONFIGS } from "../constants/sounds";
 import { getSoundConfig, playSound } from "../constants/sounds";
@@ -93,8 +99,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 	setActivityLogLimit,
 	setActivityLogPage,
 }) => {
-	const { isInstalled, installApp, getInstallInstructions, canPromptInstall } =
-		usePWAInstall();
+	const {
+		isInstalled,
+		installApp,
+		getInstallInstructions,
+		canPromptInstall,
+		hasUpdate,
+		applyUpdate,
+	} = usePWAInstall();
 	return (
 		<Modal.Root isOpen={isOpen} onClose={onClose}>
 			<Modal.Header>
@@ -408,11 +420,41 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 								Install App
 							</Button>
 						)}
+						{hasUpdate && (
+							<Button
+								type="button"
+								onClick={() => {
+									applyUpdate();
+								}}
+								style={{
+									display: "flex",
+									alignItems: "center",
+									gap: "0.5rem",
+									fontSize: "0.875rem",
+									padding: "0.5rem 1rem",
+									backgroundColor: "#f59e0b",
+									borderColor: "#f59e0b",
+								}}
+								onMouseEnter={(e) => {
+									e.currentTarget.style.backgroundColor = "#d97706";
+									e.currentTarget.style.borderColor = "#d97706";
+								}}
+								onMouseLeave={(e) => {
+									e.currentTarget.style.backgroundColor = "#f59e0b";
+									e.currentTarget.style.borderColor = "#f59e0b";
+								}}
+							>
+								<FiRefreshCw size={16} />
+								Update Available
+							</Button>
+						)}
 					</div>
 					{isInstalled ? (
 						<InfoText>
 							re:MIND is installed as an app on your device. You can launch it
 							from your home screen or app drawer.
+							{hasUpdate &&
+								" An update is available - click the update button to apply it."}
 						</InfoText>
 					) : (
 						<InfoText>

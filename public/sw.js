@@ -1,5 +1,5 @@
 // Service Worker for re:MIND PWA
-const CACHE_NAME = 'remind-v1';
+const CACHE_NAME = 'remind-v2';
 const urlsToCache = [
   '/',
   '/index.html',
