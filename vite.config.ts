@@ -10,6 +10,9 @@ export default defineConfig({
     tanstackRouter({ autoCodeSplitting: true }),
     viteReact(),
   ],
+  server: {
+    port: 3001,
+  },
   resolve: {
     alias: {
       '@': resolve(__dirname, './src'),

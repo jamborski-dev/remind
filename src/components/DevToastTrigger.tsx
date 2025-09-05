@@ -215,15 +215,6 @@ export function DevToastTrigger() {
 		setIsOpen(false);
 	};
 
-	const handleTestClick = () => {
-		console.log("DevToastTrigger: Test button clicked");
-		showToast({
-			status: "success",
-			title: "Test Toast",
-			message: "This is a test toast to verify the system works!",
-		});
-	};
-
 	const handleClickOutside = React.useCallback((event: MouseEvent) => {
 		const target = event.target as Element;
 		if (!target.closest("[data-toast-trigger]")) {
@@ -249,24 +240,6 @@ export function DevToastTrigger() {
 				<span>Test Toasts</span>
 				<FiChevronDown />
 			</Trigger>
-
-			{/* Debug button for testing */}
-			<button
-				type="button"
-				onClick={handleTestClick}
-				style={{
-					marginLeft: "0.5rem",
-					padding: "0.25rem 0.5rem",
-					fontSize: "0.75rem",
-					background: "#ef4444",
-					color: "white",
-					border: "none",
-					borderRadius: "4px",
-					cursor: "pointer",
-				}}
-			>
-				Quick Test
-			</button>
 
 			{isOpen && (
 				<Dropdown>

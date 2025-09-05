@@ -22,9 +22,7 @@ import {
 	useSetScore,
 	useSetSelectedSoundId,
 	useSetShowActivityLog,
-	useSetShowFirstPointModal,
 	useSetShowSettingsModal,
-	useSetTierUpgradeModal,
 	useSetWakeLockSupported,
 	useSettings,
 } from "../hooks/useSelectiveStoreHooks";
@@ -36,7 +34,6 @@ import {
 	reseedDev,
 } from "../utils/actions";
 import { ActivityLogTable } from "./ActivityLogTable";
-import { CelebrationModals } from "./CelebrationModals";
 import { DeleteGroupModal } from "./DeleteGroupModal";
 import { DueItemModalContainer } from "./DueItemModalContainer";
 import { GroupContainer } from "./GroupContainer";
@@ -73,8 +70,6 @@ export default function App() {
 	const setScore = useSetScore();
 
 	const setDueGroupItem = useSetDueGroupItem();
-	const setShowFirstPointModal = useSetShowFirstPointModal();
-	const setTierUpgradeModal = useSetTierUpgradeModal();
 	const setGroupToDelete = useSetGroupToDelete();
 	const setShowSettingsModal = useSetShowSettingsModal();
 
@@ -87,13 +82,7 @@ export default function App() {
 	const storeIncrementScore = useIncrementScore();
 
 	// Destructure commonly used values from memoized state
-	const {
-		dueGroupItem,
-		showFirstPointModal,
-		tierUpgradeModal,
-		groupToDelete,
-		showSettingsModal,
-	} = modals;
+	const { dueGroupItem, groupToDelete, showSettingsModal } = modals;
 
 	const {
 		selectedSoundId,
@@ -108,19 +97,11 @@ export default function App() {
 	const { anyModalOpen } = useModalOpenState(
 		dueGroupItem,
 		groupToDelete,
-		showFirstPointModal,
-		tierUpgradeModal,
 		showSettingsModal,
 	);
 	const { handleAcquireWakeLock, handleReleaseWakeLock } =
 		useWakeLock(setWakeLockSupported);
-	const { currentTier } = useScoring(
-		groups,
-		score,
-		storeIncrementScore,
-		setShowFirstPointModal,
-		setTierUpgradeModal,
-	);
+	const { currentTier } = useScoring(groups, score, storeIncrementScore);
 
 	// Group scheduler - check for due group items - pause when modals are open
 	useGroupScheduler({
@@ -159,22 +140,14 @@ export default function App() {
 	const handleReseedDev = useCallback(() => {
 		localStorage.clear();
 		setDueGroupItem(null);
-		setShowFirstPointModal(false);
 		reseedDev(setGroups, setLogEntries, setScore);
-	}, [
-		setDueGroupItem,
-		setShowFirstPointModal,
-		setGroups,
-		setLogEntries,
-		setScore,
-	]);
+	}, [setDueGroupItem, setGroups, setLogEntries, setScore]);
 
 	// AppLayout props - memoized to prevent unnecessary object recreation
 	const appLayoutProps = useMemo(
 		() => ({
 			currentTier: TIER_MESSAGES[currentTier],
 			score,
-			groupsCount: groups.length,
 			reseedDev: handleReseedDev,
 			wakeLockSupported,
 			acquireWakeLock: handleAcquireWakeLock,
@@ -184,7 +157,6 @@ export default function App() {
 		[
 			currentTier,
 			score,
-			groups.length,
 			handleReseedDev,
 			wakeLockSupported,
 			handleAcquireWakeLock,
@@ -272,13 +244,6 @@ export default function App() {
 					groupToDelete={groupToDelete}
 					setGroupToDelete={setGroupToDelete}
 					deleteGroup={deleteGroup}
-				/>
-
-				<CelebrationModals
-					showFirstPointModal={showFirstPointModal}
-					setShowFirstPointModal={setShowFirstPointModal}
-					tierUpgradeModal={tierUpgradeModal}
-					setTierUpgradeModal={setTierUpgradeModal}
 				/>
 
 				{/* Settings Modal */}

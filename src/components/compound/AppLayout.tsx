@@ -9,7 +9,6 @@ import {
 	Header,
 	HeaderScore,
 	HeaderTitle,
-	MutedText,
 } from "../ReminderApp.styled";
 import { WakeLockSwitch } from "../WakeLockSwitch";
 import { Flex } from "../design-system/layout/Flex";
@@ -18,7 +17,6 @@ interface AppLayoutProps {
 	children: React.ReactNode;
 	currentTier: TierInfo;
 	score: number;
-	groupsCount: number;
 	reseedDev?: () => void;
 	wakeLockSupported: boolean;
 	acquireWakeLock: () => Promise<void>;
@@ -30,7 +28,6 @@ export function AppLayout({
 	children,
 	currentTier,
 	score,
-	groupsCount,
 	reseedDev,
 	wakeLockSupported,
 	acquireWakeLock,
@@ -54,7 +51,6 @@ export function AppLayout({
 						{score !== 1 ? "s" : ""}
 					</HeaderScore>
 					<Flex alignItems="center" gap="1rem" style={{ justifySelf: "end" }}>
-						<MutedText>Groups: {groupsCount}</MutedText>
 						{import.meta.env?.DEV && reseedDev && (
 							<Button
 								type="button"

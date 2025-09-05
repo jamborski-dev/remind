@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useCurrentTime } from "../contexts/TimeContext";
+import { useCompleteGroupItem } from "../hooks/useCompleteGroupItem";
 import { type ReminderGroup, useAppStore } from "../store";
 import { Group } from "./Group";
 
@@ -7,6 +8,7 @@ interface GroupContainerProps {
 	group: ReminderGroup;
 	idx: number;
 	totalGroups: number;
+	completeGroupItem?: (groupId: string, itemId: string) => void;
 }
 
 /**
@@ -17,6 +19,7 @@ export const GroupContainer = ({
 	group,
 	idx,
 	totalGroups,
+	completeGroupItem: propCompleteGroupItem,
 }: GroupContainerProps) => {
 	// Get current time from context (only this component re-renders when time changes)
 	const nowTs = useCurrentTime();
@@ -38,11 +41,18 @@ export const GroupContainer = ({
 		toggleGroupEnabled: storeToggleGroupEnabled,
 		snoozeGroup: storeSnoozeGroup,
 		addLogEntry: storeAddLogEntry,
-		completeGroupItem: storeCompleteGroupItem,
 		toggleGroupItemEnabled: storeToggleGroupItemEnabled,
 		deleteGroupItem: storeDeleteGroupItem,
 		updateGroup: storeUpdateGroup,
 	} = useAppStore();
+
+	// Use the complete group item hook (with scoring) as the default
+	const { completeGroupItem: completeGroupItemWithScoring } =
+		useCompleteGroupItem();
+
+	// Use prop complete function if provided, otherwise use the scoring-aware version
+	const completeGroupItemFn =
+		propCompleteGroupItem ?? completeGroupItemWithScoring;
 
 	// Helper functions moved from ReminderApp
 	const getSortedGroupItems = useMemo(() => {
@@ -115,7 +125,7 @@ export const GroupContainer = ({
 			moveGroup={storeMoveGroup}
 			toggleGroupEnabled={storeToggleGroupEnabled}
 			setGroupToDelete={setGroupToDelete}
-			completeGroupItem={storeCompleteGroupItem}
+			completeGroupItem={completeGroupItemFn}
 			toggleGroupItemEnabled={storeToggleGroupItemEnabled}
 			deleteGroupItem={storeDeleteGroupItem}
 			storeSnoozeGroup={storeSnoozeGroup}
