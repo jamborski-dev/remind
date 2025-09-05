@@ -3,6 +3,8 @@ import { StrictMode } from "react";
 import ReactDOM from "react-dom/client";
 
 import { AppErrorBoundary } from "./components/AppErrorBoundary";
+import { PWAInstallPrompt } from "./components/PWAInstallPrompt";
+import { PWAUpdateChecker } from "./components/PWAUpdateChecker";
 import { ToastContainer } from "./components/ToastContainer";
 // Import the generated route tree
 import { routeTree } from "./routeTree.gen";
@@ -36,6 +38,8 @@ if (rootElement && !rootElement.innerHTML) {
 			<AppErrorBoundary>
 				<RouterProvider router={router} />
 				<ToastContainer />
+				<PWAUpdateChecker />
+				<PWAInstallPrompt />
 			</AppErrorBoundary>
 		</StrictMode>,
 	);
