@@ -205,10 +205,11 @@ export default function App() {
 	);
 
 	// ---- Seed builder for demo/dev ----
-	// Quick starter content if empty
+	// Quick starter content if empty (development only)
 	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
 	useEffect(() => {
-		if (groups.length === 0) {
+		// Only auto-seed in development environment
+		if (import.meta.env.DEV && groups.length === 0) {
 			const creationTime = Date.now();
 			setGroups(buildSeedGroups(creationTime));
 		}

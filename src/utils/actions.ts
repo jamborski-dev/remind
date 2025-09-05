@@ -291,6 +291,11 @@ export const clearTodaysActivity = (
 
 // ---- Development/Admin Actions ----
 
+/**
+ * Builds seed groups for development/demo purposes.
+ * NOTE: Should only be used in development environment or explicit admin actions.
+ * Do not auto-call in production when storage is empty.
+ */
 export const buildSeedGroups = (creationTime: number): ReminderGroup[] => {
 	const mkItems = (titles: string[]): ReminderGroupItem[] =>
 		titles.map((title) => ({
