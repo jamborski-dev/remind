@@ -3,6 +3,7 @@ import { StrictMode } from "react";
 import ReactDOM from "react-dom/client";
 
 import { AppErrorBoundary } from "./components/AppErrorBoundary";
+import { PWADebugInfo } from "./components/PWADebugInfo";
 import { PWAInstallPrompt } from "./components/PWAInstallPrompt";
 import { PWAUpdateChecker } from "./components/PWAUpdateChecker";
 import { ToastContainer } from "./components/ToastContainer";
@@ -40,6 +41,7 @@ if (rootElement && !rootElement.innerHTML) {
 				<ToastContainer />
 				<PWAUpdateChecker />
 				<PWAInstallPrompt />
+				<PWADebugInfo />
 			</AppErrorBoundary>
 		</StrictMode>,
 	);

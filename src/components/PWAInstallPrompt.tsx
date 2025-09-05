@@ -76,6 +76,7 @@ export function PWAInstallPrompt() {
 	const [deferredPrompt, setDeferredPrompt] =
 		useState<BeforeInstallPromptEvent | null>(null);
 	const [showPrompt, setShowPrompt] = useState(false);
+	const [showManualPrompt, setShowManualPrompt] = useState(false);
 
 	useEffect(() => {
 		const handleBeforeInstallPrompt = (e: Event) => {
@@ -84,12 +85,20 @@ export function PWAInstallPrompt() {
 			// Stash the event so it can be triggered later
 			setDeferredPrompt(e as BeforeInstallPromptEvent);
 			setShowPrompt(true);
+			console.log("PWA install prompt event received", e);
 		};
 
 		const handleAppInstalled = () => {
 			setShowPrompt(false);
 			setDeferredPrompt(null);
+			console.log("PWA installed successfully");
 		};
+
+		// Debug: Check if we're in a PWA-capable environment
+		console.log("PWA Install Prompt: Setting up listeners");
+		console.log("Is secure context:", window.isSecureContext);
+		console.log("Has service worker support:", "serviceWorker" in navigator);
+		console.log("User agent:", navigator.userAgent);
 
 		window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
 		window.addEventListener("appinstalled", handleAppInstalled);
@@ -119,9 +128,32 @@ export function PWAInstallPrompt() {
 
 	const handleDismiss = () => {
 		setShowPrompt(false);
+		setShowManualPrompt(false);
 		// Optionally set a flag in localStorage to not show again for a while
 		localStorage.setItem("pwa-install-dismissed", Date.now().toString());
 	};
+
+	const handleManualInstall = () => {
+		// For Firefox and other browsers, show manual install instructions
+		alert(`To install re:MIND on your device:
+
+Firefox Mobile:
+1. Tap the menu button (three dots)
+2. Tap "Install" or "Add to Home Screen"
+
+If you don't see this option, you can:
+1. Bookmark this page
+2. Access it from your browser's home screen`);
+
+		handleDismiss();
+	};
+
+	// Show native prompt or manual prompt
+	if (!showPrompt && !showManualPrompt) {
+		return null;
+	}
+
+	const isManualPrompt = !deferredPrompt && showManualPrompt;
 
 	// Don't show if already dismissed recently
 	useEffect(() => {
@@ -133,21 +165,43 @@ export function PWAInstallPrompt() {
 			if (daysSinceDismiss < 7) {
 				// Don't show for 7 days after dismissal
 				setShowPrompt(false);
+				setShowManualPrompt(false);
+				return;
 			}
 		}
-	}, []);
 
-	if (!showPrompt || !deferredPrompt) {
-		return null;
-	}
+		// For browsers that don't support beforeinstallprompt (like Firefox),
+		// show a manual install prompt after a delay
+		const timer = setTimeout(() => {
+			if (!deferredPrompt && "serviceWorker" in navigator) {
+				// Check if we're likely on a mobile device
+				const isMobile =
+					/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+						navigator.userAgent,
+					);
+				if (isMobile) {
+					setShowManualPrompt(true);
+				}
+			}
+		}, 3000); // Show after 3 seconds if no beforeinstallprompt event
+
+		return () => clearTimeout(timer);
+	}, [deferredPrompt]);
 
 	return (
 		<InstallPrompt>
 			<FiDownload size={20} />
-			<span>Install re:MIND for a better experience!</span>
-			<InstallButton onClick={handleInstallClick} type="button">
+			<span>
+				{isManualPrompt
+					? "Add re:MIND to your home screen!"
+					: "Install re:MIND for a better experience!"}
+			</span>
+			<InstallButton
+				onClick={isManualPrompt ? handleManualInstall : handleInstallClick}
+				type="button"
+			>
 				<FiDownload size={16} />
-				Install
+				{isManualPrompt ? "How to Install" : "Install"}
 			</InstallButton>
 			<CloseButton onClick={handleDismiss} type="button" title="Dismiss">
 				×
