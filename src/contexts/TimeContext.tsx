@@ -32,13 +32,26 @@ export function TimeProvider({
 	const [nowTs, setNowTs] = useState(() => Date.now());
 
 	useEffect(() => {
-		if (paused) {
-			// Don't update time when paused
-			return;
-		}
+		try {
+			if (paused) {
+				// Don't update time when paused
+				return;
+			}
 
-		const id = setInterval(() => setNowTs(Date.now()), interval);
-		return () => clearInterval(id);
+			const id = setInterval(() => {
+				try {
+					setNowTs(Date.now());
+				} catch (error) {
+					console.error("Error updating time:", error);
+					// Continue with stale time rather than crashing
+				}
+			}, interval);
+			return () => clearInterval(id);
+		} catch (error) {
+			console.error("Error setting up time interval:", error);
+			// Return a cleanup function even if setup failed
+			return () => {};
+		}
 	}, [interval, paused]);
 
 	const value: TimeContextValue = {
